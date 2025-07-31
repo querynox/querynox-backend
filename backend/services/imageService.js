@@ -19,7 +19,6 @@ const imageService = {
                 imageUrl: response.data[0].url
             };
         } catch (error) {
-            console.error('Image generation error:', error);
             return {
                 success: false,
                 error: error.message

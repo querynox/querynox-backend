@@ -14,6 +14,7 @@ QueryNox is a powerful, flexible chat platform that integrates multiple AI model
 - **Advanced Context Enhancement**
   - Web Search Integration
   - PDF Document Analysis (RAG)
+  - Image OCR Text Extraction (RAG)
   - Multi-file Upload Support
 
 - **Chat Management**
@@ -84,6 +85,7 @@ backend/
 
 2. **File Processing**
    - PDF document analysis
+   - Image OCR text extraction
    - Context extraction
    - RAG implementation
 
