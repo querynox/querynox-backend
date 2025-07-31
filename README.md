@@ -1,3 +1,5 @@
-# QueryNox
+# querynox : smart, fast, multi-model backend for AI-powered conversations.
 
-![QueryNox Logo](https://github.com/hackice20/querynox/raw/main/querynox.png)
+<p align="center">
+  <img src="https://github.com/hackice20/querynox/raw/main/querynox.png" alt="QueryNox Logo" width="200"/>
+</p>
