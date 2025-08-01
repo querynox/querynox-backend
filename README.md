@@ -1,4 +1,6 @@
-# querynox : smart, fast, multi-model backend for AI-powered conversations.
+# *QueryNox*
+a multi‑AI chat platform combining live web search, document retrieval (RAG), and built‑in image generation in one unified interface.
+
 
 <p align="center">
   <img src="https://github.com/hackice20/querynox/raw/main/querynox.png" alt="QueryNox Logo" width="200"/>
