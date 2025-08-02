@@ -6,70 +6,47 @@ const webSearchService = require('../services/webSearchService');
 const aiService = require('../services/aiService');
 
 const chatController = {
+    // --- NON-STREAMING METHODS ---
     createChat: async (req, res) => {
         try {
             const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
             const files = req.files;
-
-            // 1. Find or create the User
             let user = await User.findOne({ userId: clerkUserId });
             if (!user) {
                 user = new User({ userId: clerkUserId, chats: [] });
                 await user.save();
             }
-
-            // 2. Generate chatname using Llama3 via Groq (only at creation)
             const chatname = await aiService.generateChatname(prompt);
-
-            // 3. Create new Chat session
-            const chat = new Chat({
-                userId: user._id,
-                title: prompt.substring(0, 30),
-                chatname: chatname, // Set only at creation, never changes
-            });
-
-            // 4. Build context from RAG and Web Search
+            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
+            
             let context = '';
             if (webSearch === 'true' || webSearch === true) {
                 context += await webSearchService.search(prompt);
             }
-            context += await ragService.getContextFromFiles(prompt, files);
-
+            if (files && files.length > 0) {
+                context += await ragService.getContextFromFiles(prompt, files);
+            }
             const augmentedPrompt = `${prompt}${context}`;
+            const messages = [{ role: 'user', content: augmentedPrompt }];
 
-            // 5. Generate AI response
-            const assistantResponse = await aiService.generateResponse(
-                model,
-                [{ role: 'user', content: augmentedPrompt }],
-                systemPrompt || 'You are a helpful assistant.',
-                augmentedPrompt
-            );
+            const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
 
-            // 6. Save chat first
             await chat.save();
-
-            // 7. Create first chatQuery in separate collection
             const firstChatQuery = new ChatQuery({
                 chatId: chat._id,
                 prompt: prompt,
                 model: model,
-                systemPrompt: systemPrompt || 'You are a helpful assistant.',
+                systemPrompt: systemPrompt,
                 webSearch: webSearch === 'true' || webSearch === true,
                 response: assistantResponse
             });
             await firstChatQuery.save();
-
-            // 8. Add chat to user's chats array
             user.chats.push(chat._id);
             await user.save();
 
-            res.status(201).json({ 
-                chatId: chat._id,
-                chatname: chat.chatname,
-                chat: chat,
-                response: assistantResponse 
-            });
+            res.status(201).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
         } catch (error) {
+            console.error('Create Chat Error:', error);
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -77,122 +54,221 @@ const chatController = {
     handleChat: async (req, res) => {
         try {
             const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
-            const { chatId } = req.params; // Get chatId from URL parameter
+            const { chatId } = req.params;
+            const files = req.files;
+            
+            const chat = await Chat.findById(chatId);
+            if (!chat) return res.status(404).json({ error: 'Chat not found' });
+            
+            let context = '';
+            if (webSearch === 'true' || webSearch === true) {
+                context += await webSearchService.search(prompt);
+            }
+            if (files && files.length > 0) {
+                context += await ragService.getContextFromFiles(prompt, files);
+            }
+
+            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
+            const conversationHistory = previousQueries.map(q => ([
+                { role: 'user', content: q.prompt },
+                { role: 'assistant', content: q.response }
+            ])).flat();
+
+            const messages = [...conversationHistory, { role: 'user', content: `${prompt}${context}` }];
+
+            const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
+            
+            const newChatQuery = new ChatQuery({
+                chatId: chat._id,
+                prompt: prompt,
+                model: model,
+                systemPrompt: systemPrompt,
+                webSearch: webSearch === 'true' || webSearch === true,
+                response: assistantResponse
+            });
+            await newChatQuery.save();
+
+            chat.updatedAt = Date.now();
+            await chat.save();
+            
+            res.status(200).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+        } catch (error) {
+            console.error('Handle Chat Error:', error);
+            res.status(500).json({ error: 'An internal server error occurred.' });
+        }
+    },
+
+    // --- STREAMING METHODS ---
+    createChatStream: async (req, res) => {
+        try {
+            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
             const files = req.files;
 
-            // 1. Find or create the User
+            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*',
+            });
+
+            const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+            sendEvent({ type: 'status', message: 'Initializing chat...' });
+
             let user = await User.findOne({ userId: clerkUserId });
             if (!user) {
                 user = new User({ userId: clerkUserId, chats: [] });
                 await user.save();
             }
 
-            // 2. Find or create the Chat session
-            let chat = null;
-            let isModelSwitch = false;
-            let conversationSummary = '';
+            sendEvent({ type: 'status', message: 'Generating chat name...' });
+            const chatname = await aiService.generateChatname(prompt);
 
-            if (chatId) {
-                // Try to find existing chat
-                chat = await Chat.findById(chatId);
-                if (chat) {
-                    // Get previous chatQueries for this chat
-                    const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-                    
-                    // Check if model is being switched
-                    const lastQuery = previousQueries[previousQueries.length - 1];
-                    if (lastQuery && lastQuery.model !== model) {
-                        isModelSwitch = true;
-                        
-                        // Generate conversation summary for model switch (only if not first message)
-                        if (previousQueries.length > 0) {
-                            try {
-                                conversationSummary = await aiService.generateConversationSummary(previousQueries);
-                            } catch (summaryError) {
-                                conversationSummary = 'Previous conversation context preserved.';
-                            }
-                        }
-                    }
-                }
-            }
+            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
+            await chat.save();
+            user.chats.push(chat._id);
+            await user.save();
 
-            if (!chat) {
-                // Create new chat only if no chatId provided or chatId not found
-                const chatname = await aiService.generateChatname(prompt);
-                chat = new Chat({
-                    userId: user._id,
-                    title: prompt.substring(0, 30),
-                    chatname: chatname, // Set only at creation
-                });
-                await chat.save();
-                user.chats.push(chat._id);
-                await user.save();
-            }
+            sendEvent({ type: 'metadata', chatId: chat._id, chatname: chat.chatname });
 
-            // 3. Build context from RAG and Web Search
             let context = '';
             if (webSearch === 'true' || webSearch === true) {
+                sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
-            }
-            context += await ragService.getContextFromFiles(prompt, files);
-
-            // 4. Prepare the prompt with conversation history and summary if model switching
-            let finalPrompt = prompt;
-            let conversationHistory = '';
-            
-            // Get previous chatQueries for this chat
-            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-            
-            // Build conversation history from previous chatQueries
-            if (previousQueries && previousQueries.length > 0) {
-                conversationHistory = previousQueries.map(q => 
-                    `User: ${q.prompt}\nAssistant: ${q.response}`
-                ).join('\n\n');
-            }
-            
-            if (isModelSwitch && conversationSummary) {
-                finalPrompt = `Previous conversation summary: ${conversationSummary}\n\nCurrent user message: ${prompt}`;
-            } else if (conversationHistory) {
-                finalPrompt = `Previous conversation:\n${conversationHistory}\n\nCurrent user message: ${prompt}`;
+                sendEvent({ type: 'status', message: 'Web search completed.' });
             }
 
-            const augmentedPrompt = `${finalPrompt}${context}`;
+            if (files && files.length > 0) {
+                sendEvent({ type: 'status', message: `Processing ${files.length} file(s)...` });
+                context += await ragService.getContextFromFiles(prompt, files);
+                sendEvent({ type: 'status', message: 'File processing completed.' });
+            }
+            
+            const augmentedPrompt = `${prompt}${context}`;
+            const messages = [{ role: 'user', content: augmentedPrompt }];
+            
+            sendEvent({ type: 'status', message: 'Generating AI response...' });
 
-            // 5. Generate AI response
-            let assistantResponse;
+            let fullResponse = '';
             try {
-                assistantResponse = await aiService.generateResponse(
-                    model,
-                    [{ role: 'user', content: augmentedPrompt }],
-                    systemPrompt || 'You are a helpful assistant.',
-                    augmentedPrompt
-                );
+                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
+                    fullResponse += chunk;
+                    sendEvent({ type: 'content', content: chunk });
+                }
+                
+                const firstChatQuery = new ChatQuery({
+                    chatId: chat._id, prompt, model, systemPrompt,
+                    webSearch: webSearch === 'true' || webSearch === true,
+                    response: fullResponse
+                });
+                await firstChatQuery.save();
+                sendEvent({ type: 'complete', fullResponse });
+
             } catch (aiError) {
-                assistantResponse = `I apologize, but I'm experiencing technical difficulties with the ${model} service. Please try again in a moment or switch to a different model. Error: ${aiError.message}`;
+                console.error('AI generation error:', aiError);
+                sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
             }
 
-            // 6. Create new chatQuery in separate collection
-            const newChatQuery = new ChatQuery({
-                chatId: chat._id,
-                prompt: prompt,
-                model: model,
-                systemPrompt: systemPrompt || 'You are a helpful assistant.',
-                webSearch: webSearch === 'true' || webSearch === true,
-                response: assistantResponse
-            });
-            await newChatQuery.save();
+            res.write(`data: [DONE]\n\n`);
+            res.end();
 
-            res.status(200).json({ 
-                chatId: chat._id,
-                chatname: chat.chatname,
-                chat: chat,
-                response: assistantResponse 
-            });
         } catch (error) {
-            res.status(500).json({ error: 'An internal server error occurred.' });
+            console.error('Streaming createChat error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'An internal server error occurred.' });
+            } else {
+                res.end();
+            }
         }
     },
 
+    handleChatStream: async (req, res) => {
+        try {
+            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { chatId } = req.params;
+            const files = req.files;
+
+            if (!clerkUserId || !prompt || !model || !chatId) return res.status(400).json({ error: 'Missing required fields' });
+
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*',
+            });
+
+            const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+            sendEvent({ type: 'status', message: 'Loading chat...' });
+
+            const chat = await Chat.findById(chatId);
+            if (!chat) {
+                sendEvent({ type: 'error', error: 'Chat not found' });
+                res.write(`data: [DONE]\n\n`);
+                return res.end();
+            }
+
+            sendEvent({ type: 'metadata', chatId: chat._id, chatname: chat.chatname });
+            
+            sendEvent({ type: 'status', message: 'Loading conversation history...' });
+            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
+
+            let context = '';
+            if (webSearch === 'true' || webSearch === true) {
+                sendEvent({ type: 'status', message: 'Searching the web...' });
+                context += await webSearchService.search(prompt);
+                sendEvent({ type: 'status', message: 'Web search completed.' });
+            }
+
+            if (files && files.length > 0) {
+                sendEvent({ type: 'status', message: `Processing ${files.length} file(s)...` });
+                context += await ragService.getContextFromFiles(prompt, files);
+                sendEvent({ type: 'status', message: 'File processing completed.' });
+            }
+
+            const conversationHistory = previousQueries.map(q => ([
+                { role: 'user', content: q.prompt },
+                { role: 'assistant', content: q.response }
+            ])).flat();
+
+            const messages = [...conversationHistory, { role: 'user', content: `${prompt}${context}` }];
+
+            sendEvent({ type: 'status', message: 'Generating AI response...' });
+
+            let fullResponse = '';
+            try {
+                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
+                    fullResponse += chunk;
+                    sendEvent({ type: 'content', content: chunk });
+                }
+
+                const newChatQuery = new ChatQuery({
+                    chatId: chat._id, prompt, model, systemPrompt,
+                    webSearch: webSearch === 'true' || webSearch === true,
+                    response: fullResponse
+                });
+                await newChatQuery.save();
+                
+                chat.updatedAt = Date.now();
+                await chat.save();
+                sendEvent({ type: 'complete', fullResponse });
+
+            } catch (aiError) {
+                console.error('AI generation error:', aiError);
+                sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
+            }
+
+            res.write(`data: [DONE]\n\n`);
+            res.end();
+
+        } catch (error) {
+            console.error('Streaming handleChat error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'An internal server error occurred.' });
+            } else {
+                res.end();
+            }
+        }
+    },
+   
     getUserChats: async (req, res) => {
         try {
             const { clerkUserId } = req.params;
@@ -216,10 +292,7 @@ const chatController = {
             if (!chat) {
                 return res.status(404).json({ error: 'Chat not found' });
             }
-            
-            // Get all chatQueries for this chat
             const chatQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-            
             res.status(200).json({
                 chat: chat,
                 chatQueries: chatQueries
@@ -228,65 +301,39 @@ const chatController = {
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
-
+    
     switchModel: async (req, res) => {
         try {
             const { clerkUserId, chatId, newModel, systemPrompt } = req.body;
-
-            // 1. Find the User
-            let user = await User.findOne({ userId: clerkUserId });
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            // 2. Find the Chat
             const chat = await Chat.findById(chatId);
             if (!chat) {
                 return res.status(404).json({ error: 'Chat not found' });
             }
-
-            // 3. Get previous chatQueries
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
             const lastQuery = previousQueries[previousQueries.length - 1];
-            
-            // Check if model is actually changing
-            if (lastQuery && lastQuery.model === newModel) {
-                return res.status(200).json({ 
-                    message: 'Model is already set to ' + newModel,
-                    chat: chat 
-                });
-            }
-
             const oldModel = lastQuery ? lastQuery.model : 'no previous model';
-
-            // 4. Generate conversation summary if there are chatQueries
-            let conversationSummary = '';
-            if (previousQueries && previousQueries.length > 0) {
+            if (lastQuery && lastQuery.model === newModel) {
+                return res.status(200).json({ message: 'Model is already set to ' + newModel, chat: chat });
+            }
+            let conversationSummary = 'Previous conversation context preserved.';
+            if (previousQueries.length > 0) {
                 try {
                     conversationSummary = await aiService.generateConversationSummary(previousQueries);
                 } catch (summaryError) {
-                    conversationSummary = 'Previous conversation context preserved.';
+                    console.error('Summary generation error on model switch:', summaryError);
                 }
             }
-
-            // 5. Add a system message about the model switch as a new chatQuery
             const switchChatQuery = new ChatQuery({
-                chatId: chat._id,
-                prompt: `Model switched from ${oldModel} to ${newModel}`,
-                model: newModel,
-                systemPrompt: systemPrompt || 'You are a helpful assistant.',
-                webSearch: false,
-                response: conversationSummary ? `Model switched. Previous conversation summary: ${conversationSummary}` : `Model switched from ${oldModel} to ${newModel}.`
+                chatId: chat._id, prompt: `(System: Model switched from ${oldModel} to ${newModel})`,
+                model: newModel, systemPrompt: systemPrompt,
+                webSearch: false, response: conversationSummary
             });
             await switchChatQuery.save();
-
-            res.status(200).json({ 
-                message: `Successfully switched from ${oldModel} to ${newModel}`,
-                chat: chat,
-                oldModel: oldModel,
-                newModel: newModel
-            });
+            chat.updatedAt = Date.now();
+            await chat.save();
+            res.status(200).json({ message: `Successfully switched from ${oldModel} to ${newModel}`, chat: chat });
         } catch (error) {
+            console.error('Switch Model Error:', error);
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -294,36 +341,11 @@ const chatController = {
     getAvailableModels: async (req, res) => {
         try {
             const models = [
-                { 
-                    modelName: "Claude Haiku 3.5", 
-                    modelCategory: "Text Generation",
-                    description: "Fast and efficient text generation"
-                },
-                { 
-                    modelName: "llama-3.3-70b-versatile", 
-                    modelCategory: "Text Generation",
-                    description: "Powerful open-source model via Groq"
-                },
-                { 
-                    modelName: "gpt-3.5-turbo", 
-                    modelCategory: "Text Generation",
-                    description: "Reliable and versatile text generation"
-                },
-                { 
-                    modelName: "gemini-2.5-flash", 
-                    modelCategory: "Text Generation",
-                    description: "Google's advanced language model"
-                },
-                { 
-                    modelName: "dall-e-3", 
-                    modelCategory: "Image Generation",
-                    description: "High-quality image generation"
-                },
-                { 
-                    modelName: "gpt-image-1", 
-                    modelCategory: "Image Generation",
-                    description: "Alternative image generation model"
-                }
+                { modelName: "Claude 3.5 Sonnet", modelCategory: "Text Generation", description: "Fast and efficient text generation" },
+                { modelName: "llama3-70b-8192", modelCategory: "Text Generation", description: "Powerful open-source model via Groq" },
+                { modelName: "gpt-3.5-turbo", modelCategory: "Text Generation", description: "Reliable and versatile text generation" },
+                { modelName: "gemini-1.5-flash", modelCategory: "Text Generation", description: "Google's advanced language model" },
+                { modelName: "dall-e-3", modelCategory: "Image Generation", description: "High-quality image generation" }
             ];
             res.status(200).json(models);
         } catch (error) {
@@ -332,4 +354,4 @@ const chatController = {
     }
 };
 
-module.exports = chatController; 
+module.exports = chatController;
