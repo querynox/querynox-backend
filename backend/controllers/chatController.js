@@ -4,6 +4,7 @@ const ChatQuery = require('../models/ChatQuery');
 const ragService = require('../services/ragService');
 const webSearchService = require('../services/webSearchService');
 const aiService = require('../services/aiService');
+const models = require('../data/models');
 
 const chatController = {
     // --- NON-STREAMING METHODS ---
@@ -274,9 +275,7 @@ const chatController = {
             const { clerkUserId } = req.params;
             const user = await User.findOne({ userId: clerkUserId });
             if (!user) {
-                const newUser = new User({ userId: clerkUserId, chats: [] });
-                await newUser.save();
-                return res.status(200).json([]);
+                return res.status(404).json({error:`Specifed user with userid ${clerkUserId} could not be found.`});
             }
             const chats = await Chat.find({ _id: { $in: user.chats } }).sort({ updatedAt: -1 });
             res.status(200).json(chats);
@@ -340,13 +339,6 @@ const chatController = {
 
     getAvailableModels: async (req, res) => {
         try {
-            const models = [
-                { modelName: "Claude 3.5 Sonnet", modelCategory: "Text Generation", description: "Fast and efficient text generation" },
-                { modelName: "llama3-70b-8192", modelCategory: "Text Generation", description: "Powerful open-source model via Groq" },
-                { modelName: "gpt-3.5-turbo", modelCategory: "Text Generation", description: "Reliable and versatile text generation" },
-                { modelName: "gemini-1.5-flash", modelCategory: "Text Generation", description: "Google's advanced language model" },
-                { modelName: "dall-e-3", modelCategory: "Image Generation", description: "High-quality image generation" }
-            ];
             res.status(200).json(models);
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });

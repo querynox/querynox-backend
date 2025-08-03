@@ -5,6 +5,8 @@ const router = express.Router();
 
 // Debug middleware for routes (remove logging)
 router.use((req, res, next) => {
+  console.log(req.url)
+  console.log(req.method)
   next();
 });
 
@@ -50,7 +52,7 @@ router.get('/chats/user/:clerkUserId', chatController.getUserChats);
 router.get('/chat/:chatId', chatController.getChatHistory);
 
 // Model switching routes
-router.post('/chat/switch-model', chatController.switchModel);
+//router.post('/chat/switch-model', chatController.switchModel);
 router.get('/models', chatController.getAvailableModels);
 
 module.exports = router;
