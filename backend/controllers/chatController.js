@@ -5,94 +5,86 @@ const ragService = require('../services/ragService');
 const webSearchService = require('../services/webSearchService');
 const aiService = require('../services/aiService');
 const models = require('../data/models');
+const { default: mongoose } = require('mongoose');
 
 const chatController = {
-    // --- NON-STREAMING METHODS ---
-    createChat: async (req, res) => {
-        try {
-            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
-            const files = req.files;
-            let user = await User.findOne({ userId: clerkUserId });
-            if (!user) {
-                user = new User({ userId: clerkUserId, chats: [] });
-                await user.save();
-            }
-            const chatname = await aiService.generateChatname(prompt);
-            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
-            
-            let context = '';
-            if (webSearch === 'true' || webSearch === true) {
-                context += await webSearchService.search(prompt);
-            }
-            if (files && files.length > 0) {
-                context += await ragService.getContextFromFiles(prompt, files);
-            }
-            const augmentedPrompt = `${prompt}${context}`;
-            const messages = [{ role: 'user', content: augmentedPrompt }];
-
-            const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
-
-            await chat.save();
-            const firstChatQuery = new ChatQuery({
-                chatId: chat._id,
-                prompt: prompt,
-                model: model,
-                systemPrompt: systemPrompt,
-                webSearch: webSearch === 'true' || webSearch === true,
-                response: assistantResponse
-            });
-            await firstChatQuery.save();
-            user.chats.push(chat._id);
-            await user.save();
-
-            res.status(201).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
-        } catch (error) {
-            console.error('Create Chat Error:', error);
-            res.status(500).json({ error: 'An internal server error occurred.' });
-        }
-    },
-
+    // --- NON-STREAMING METHOD ---
     handleChat: async (req, res) => {
         try {
             const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
             const { chatId } = req.params;
             const files = req.files;
-            
-            const chat = await Chat.findById(chatId);
-            if (!chat) return res.status(404).json({ error: 'Chat not found' });
+
+            let chat, user;
+
+            if(chatId){
+                // Assumption: User already exist which has already created Chat with ChatID
+                // Truthy value of 'chatId' could be used to determine if chat already exist. 
+
+                if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                    return res.status(400).json({ error: 'Invalid Chat Id' });
+                }
+
+                chat = await Chat.findById(chatId);
+                if (!chat) return res.status(404).json({ error: 'Chat not found' });
+
+                // Ensuring that user is never undefined but optionally can be removed.
+                user = await User.findOne({ userId: clerkUserId }); 
+                if (!chat) return res.status(404).json({ error: 'User not found' });
+
+            }else{
+                //Handleing User Creation(UpInsert)
+                user = await User.findOne({ userId: clerkUserId });
+                if (!user) {
+                    user = new User({ userId: clerkUserId, chats: [] });
+                    await user.save();
+                }
+
+                //Handleing Chat Creation
+                const chatname = await aiService.generateChatname(prompt);
+                chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
+            }
             
             let context = '';
-            if (webSearch === 'true' || webSearch === true) {
+            if (webSearch == true) {
                 context += await webSearchService.search(prompt);
             }
             if (files && files.length > 0) {
                 context += await ragService.getContextFromFiles(prompt, files);
             }
 
-            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
+            const previousQueries = chatId ? await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 }) : [];
             const conversationHistory = previousQueries.map(q => ([
                 { role: 'user', content: q.prompt },
                 { role: 'assistant', content: q.response }
             ])).flat();
 
-            const messages = [...conversationHistory, { role: 'user', content: `${prompt}${context}` }];
+            const augmentedPrompt = `${prompt}${context}`;
+            const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
 
             const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
-            
-            const newChatQuery = new ChatQuery({
+
+            chat.updatedAt = Date.now();
+            chat = await chat.save();
+
+            const chatQuery = new ChatQuery({
                 chatId: chat._id,
                 prompt: prompt,
                 model: model,
                 systemPrompt: systemPrompt,
-                webSearch: webSearch === 'true' || webSearch === true,
+                webSearch: webSearch == true,
                 response: assistantResponse
             });
-            await newChatQuery.save();
+            await chatQuery.save();
 
-            chat.updatedAt = Date.now();
-            await chat.save();
-            
-            res.status(200).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+            if(!chatId && user){// Create new Chat
+                user.chats.push(chat._id);
+                await user.save();
+                res.status(201).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+            }else{
+                res.status(200).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+            }
+
         } catch (error) {
             console.error('Handle Chat Error:', error);
             res.status(500).json({ error: 'An internal server error occurred.' });
@@ -133,7 +125,7 @@ const chatController = {
             sendEvent({ type: 'metadata', chatId: chat._id, chatname: chat.chatname });
 
             let context = '';
-            if (webSearch === 'true' || webSearch === true) {
+            if (webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
                 sendEvent({ type: 'status', message: 'Web search completed.' });
@@ -159,7 +151,7 @@ const chatController = {
                 
                 const firstChatQuery = new ChatQuery({
                     chatId: chat._id, prompt, model, systemPrompt,
-                    webSearch: webSearch === 'true' || webSearch === true,
+                    webSearch: webSearch == true,
                     response: fullResponse
                 });
                 await firstChatQuery.save();
@@ -213,7 +205,7 @@ const chatController = {
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
             let context = '';
-            if (webSearch === 'true' || webSearch === true) {
+            if (webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
                 sendEvent({ type: 'status', message: 'Web search completed.' });
@@ -243,7 +235,7 @@ const chatController = {
 
                 const newChatQuery = new ChatQuery({
                     chatId: chat._id, prompt, model, systemPrompt,
-                    webSearch: webSearch === 'true' || webSearch === true,
+                    webSearch: webSearch == true,
                     response: fullResponse
                 });
                 await newChatQuery.save();
@@ -292,10 +284,7 @@ const chatController = {
                 return res.status(404).json({ error: 'Chat not found' });
             }
             const chatQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-            res.status(200).json({
-                chat: chat,
-                chatQueries: chatQueries
-            });
+            res.status(200).json({...chat._doc, chatQueries});
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
@@ -339,7 +328,7 @@ const chatController = {
 
     getAvailableModels: async (req, res) => {
         try {
-            res.status(200).json(models);
+            res.status(200).json(models.default);
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });
         }

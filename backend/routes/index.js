@@ -46,8 +46,7 @@ router.post('/chat/:chatId/stream', upload.array('files', 5), chatController.han
 
 // EXISTING NON-STREAMING ROUTES
 // Chat routes
-router.post('/chat', upload.array('files', 5), chatController.createChat); // New chat
-router.post('/chat/:chatId', upload.array('files', 5), chatController.handleChat); // Continue existing chat
+router.post(['/chat', '/chat/:chatId'], upload.array('files', 5), chatController.handleChat);
 router.get('/chats/user/:clerkUserId', chatController.getUserChats);
 router.get('/chat/:chatId', chatController.getChatHistory);
 

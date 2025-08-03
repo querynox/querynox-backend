@@ -7,8 +7,8 @@ const ChatQuerySchema = new mongoose.Schema({
   systemPrompt: { type: String },
   webSearch: { type: Boolean, default: false },
   response: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now }
 });
 
 module.exports = mongoose.model('ChatQuery', ChatQuerySchema);
