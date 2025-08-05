@@ -15,6 +15,8 @@ const chatController = {
             const { chatId } = req.params;
             const files = req.files;
 
+            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+
             let chat, user;
 
             if(chatId){
@@ -41,8 +43,8 @@ const chatController = {
                 }
 
                 //Handleing Chat Creation
-                const chatname = await aiService.generateChatname(prompt);
-                chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
+                const chatName = await aiService.generateChatname(prompt);
+                chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName ,  model, systemPrompt, webSearch });
             }
             
             let context = '';
@@ -65,6 +67,9 @@ const chatController = {
             const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
 
             chat.updatedAt = Date.now();
+            chat['model'] = model;
+            chat.systemPrompt = systemPrompt;
+            chat.webSearch = webSearch;
             chat = await chat.save();
 
             const chatQuery = new ChatQuery({
@@ -80,9 +85,9 @@ const chatController = {
             if(!chatId && user){// Create new Chat
                 user.chats.push(chat._id);
                 await user.save();
-                res.status(201).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+                res.status(201).json({chatQuery:chatQuery, chat:chat});
             }else{
-                res.status(200).json({ chatId: chat._id, chatname: chat.chatname, response: assistantResponse });
+                res.status(200).json({chatQuery});
             }
 
         } catch (error) {
@@ -115,14 +120,14 @@ const chatController = {
             }
 
             sendEvent({ type: 'status', message: 'Generating chat name...' });
-            const chatname = await aiService.generateChatname(prompt);
+            const chatName = await aiService.generateChatname(prompt);
 
-            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatname: chatname });
+            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName });
             await chat.save();
             user.chats.push(chat._id);
             await user.save();
 
-            sendEvent({ type: 'metadata', chatId: chat._id, chatname: chat.chatname });
+            sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
 
             let context = '';
             if (webSearch == true) {
@@ -199,7 +204,7 @@ const chatController = {
                 return res.end();
             }
 
-            sendEvent({ type: 'metadata', chatId: chat._id, chatname: chat.chatname });
+            sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
             
             sendEvent({ type: 'status', message: 'Loading conversation history...' });
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
@@ -261,6 +266,140 @@ const chatController = {
             }
         }
     },
+
+    handleChatStreamCombined: async (req, res) => {
+        try {
+            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { chatId } = req.params;
+            const files = req.files;
+
+            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+            
+            let chat, user;
+
+            res.writeHead(200, {
+                'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*',
+            });
+
+            const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+            sendEvent({ type: 'status', message: 'Loading chat...' });
+
+            if(chatId){
+                // Assumption: User already exist which has already created Chat with ChatID
+                // Truthy value of 'chatId' could be used to determine if chat already exist. 
+
+                if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                    sendEvent({ type: 'error', error: 'Invalid Chat Id' });
+                    res.write(`data: [DONE]\n\n`);
+                    return res.end();
+                }
+
+                chat = await Chat.findById(chatId);
+                if (!chat){
+                    sendEvent({ type: 'error', error: 'Chat not found' });
+                    res.write(`data: [DONE]\n\n`);
+                    return res.end();
+                }
+
+                // Ensuring that user is never undefined but optionally can be removed.
+                user = await User.findOne({ userId: clerkUserId }); 
+                if (!chat){
+                    sendEvent({ type: 'error', error: 'User not found' });
+                    res.write(`data: [DONE]\n\n`);
+                    return res.end();                  
+                }
+
+            }else{
+                //Handleing User Creation(UpInsert)
+                user = await User.findOne({ userId: clerkUserId });
+                if (!user) {
+                    user = new User({ userId: clerkUserId, chats: [] });
+                    await user.save();
+                }
+
+                //Handleing Chat Creation
+                const chatName = await aiService.generateChatname(prompt);
+                chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName ,  model, systemPrompt, webSearch });
+            }
+
+
+            sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
+            
+            sendEvent({ type: 'status', message: 'Loading conversation history...' });
+            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
+
+            let context = '';
+            if (webSearch == true) {
+                sendEvent({ type: 'status', message: 'Searching the web...' });
+                context += await webSearchService.search(prompt);
+                sendEvent({ type: 'status', message: 'Web search completed.' });
+            }
+
+            if (files && files.length > 0) {
+                sendEvent({ type: 'status', message: `Processing ${files.length} file(s)...` });
+                context += await ragService.getContextFromFiles(prompt, files);
+                sendEvent({ type: 'status', message: 'File processing completed.' });
+            }
+
+            const conversationHistory = previousQueries.map(q => ([
+                { role: 'user', content: q.prompt },
+                { role: 'assistant', content: q.response }
+            ])).flat();
+
+            const augmentedPrompt = `${prompt}${context}`;
+            const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
+
+            sendEvent({ type: 'status', message: 'Generating AI response...' });
+
+            let fullResponse = '';
+            try {
+                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
+                    fullResponse += chunk;
+                    sendEvent({ type: 'content', content: chunk });
+                }
+
+                chat.updatedAt = Date.now();
+                chat['model'] = model;
+                chat.systemPrompt = systemPrompt;
+                chat.webSearch = webSearch;
+                chat = await chat.save();
+
+
+                const chatQuery = new ChatQuery({
+                    chatId: chat._id,
+                    prompt: prompt,
+                    model: model,
+                    systemPrompt: systemPrompt,
+                    webSearch: webSearch == true,
+                    response: fullResponse
+                });
+                await chatQuery.save();
+
+                if(!chatId && user){// Create new Chat
+                    user.chats.push(chat._id);
+                    await user.save();
+                }
+
+                sendEvent({ type: 'complete', chatQuery, chat });
+
+            } catch (aiError) {
+                console.error('AI generation error:', aiError);
+                sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
+            }
+
+            res.end();
+
+        } catch (error) {
+            console.error('Streaming handleChat error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'An internal server error occurred.' });
+            } else {
+                res.end();
+            }
+        }
+    },
    
     getUserChats: async (req, res) => {
         try {
@@ -269,7 +408,7 @@ const chatController = {
             if (!user) {
                 return res.status(404).json({error:`Specifed user with userid ${clerkUserId} could not be found.`});
             }
-            const chats = await Chat.find({ _id: { $in: user.chats } }).sort({ updatedAt: -1 });
+            const chats = await Chat.find({ _id: { $in: user.chats } }).sort({ updatedAt: -1 }).select('-__v');
             res.status(200).json(chats);
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });

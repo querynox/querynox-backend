@@ -7,6 +7,7 @@ const router = express.Router();
 router.use((req, res, next) => {
   console.log(req.url)
   console.log(req.method)
+  console.log(req.body)
   next();
 });
 
@@ -39,10 +40,10 @@ const upload = multer({
 
 // STREAMING ROUTES 
 // Streaming new chat creation
-router.post('/chat/stream', upload.array('files', 5), chatController.createChatStream);
+router.post('/chat/stream', upload.array('files', 5), chatController.handleChatStreamCombined);
 
 // Streaming continue existing chat
-router.post('/chat/:chatId/stream', upload.array('files', 5), chatController.handleChatStream);
+router.post('/chat/:chatId/stream', upload.array('files', 5), chatController.handleChatStreamCombined);
 
 // EXISTING NON-STREAMING ROUTES
 // Chat routes
