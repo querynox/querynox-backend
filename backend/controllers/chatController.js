@@ -9,7 +9,7 @@ const { default: mongoose } = require('mongoose');
 
 const chatController = {
     // --- NON-STREAMING METHOD ---
-    handleChat: async (req, res) => {
+    handleChatCombined: async (req, res) => {
         try {
             const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
             const { chatId } = req.params;
@@ -48,7 +48,7 @@ const chatController = {
             }
             
             let context = '';
-            if (webSearch == true) {
+            if (webSearch == "true" || webSearch == true) {
                 context += await webSearchService.search(prompt);
             }
             if (files && files.length > 0) {
@@ -77,7 +77,7 @@ const chatController = {
                 prompt: prompt,
                 model: model,
                 systemPrompt: systemPrompt,
-                webSearch: webSearch == true,
+                webSearch: webSearch == "true" || webSearch == true,
                 response: assistantResponse
             });
             await chatQuery.save();
@@ -130,7 +130,7 @@ const chatController = {
             sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
 
             let context = '';
-            if (webSearch == true) {
+            if (webSearch == "true" || webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
                 sendEvent({ type: 'status', message: 'Web search completed.' });
@@ -156,7 +156,7 @@ const chatController = {
                 
                 const firstChatQuery = new ChatQuery({
                     chatId: chat._id, prompt, model, systemPrompt,
-                    webSearch: webSearch == true,
+                    webSearch: webSearch == "true" || webSearch == true,
                     response: fullResponse
                 });
                 await firstChatQuery.save();
@@ -210,7 +210,7 @@ const chatController = {
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
             let context = '';
-            if (webSearch == true) {
+            if (webSearch == "true" || webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
                 sendEvent({ type: 'status', message: 'Web search completed.' });
@@ -240,7 +240,7 @@ const chatController = {
 
                 const newChatQuery = new ChatQuery({
                     chatId: chat._id, prompt, model, systemPrompt,
-                    webSearch: webSearch == true,
+                    webSearch: webSearch == "true" || webSearch == true,
                     response: fullResponse
                 });
                 await newChatQuery.save();
@@ -272,6 +272,7 @@ const chatController = {
             const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
             const { chatId } = req.params;
             const files = req.files;
+            console.log(req.body)
 
             if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
             
@@ -331,7 +332,7 @@ const chatController = {
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
             let context = '';
-            if (webSearch == true) {
+            if (webSearch == "true" || webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
                 context += await webSearchService.search(prompt);
                 sendEvent({ type: 'status', message: 'Web search completed.' });
@@ -372,7 +373,7 @@ const chatController = {
                     prompt: prompt,
                     model: model,
                     systemPrompt: systemPrompt,
-                    webSearch: webSearch == true,
+                    webSearch: webSearch == "true" || webSearch == true,
                     response: fullResponse
                 });
                 await chatQuery.save();

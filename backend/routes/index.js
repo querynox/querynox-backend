@@ -5,9 +5,8 @@ const router = express.Router();
 
 // Debug middleware for routes (remove logging)
 router.use((req, res, next) => {
-  console.log(req.url)
-  console.log(req.method)
-  console.log(req.body)
+  // console.log(req.url)
+  // console.log(req.method)
   next();
 });
 
@@ -47,7 +46,7 @@ router.post('/chat/:chatId/stream', upload.array('files', 5), chatController.han
 
 // EXISTING NON-STREAMING ROUTES
 // Chat routes
-router.post(['/chat', '/chat/:chatId'], upload.array('files', 5), chatController.handleChat);
+router.post(['/chat', '/chat/:chatId'], upload.array('files', 5), chatController.handleChatCombined);
 router.get('/chats/user/:clerkUserId', chatController.getUserChats);
 router.get('/chat/:chatId', chatController.getChatHistory);
 
