@@ -475,8 +475,8 @@ const chatController = {
     },
 
     deleteChat: async (req,res) => {
-        // const session = await mongoose.startSession();
-        // session.startTransaction(); 
+        const session = await mongoose.startSession();
+        session.startTransaction(); 
 
         try {
             const { clerkUserId } = req.body;
@@ -502,15 +502,15 @@ const chatController = {
             await chat.deleteOne();
             await user.save()
 
-           //await session.commitTransaction();
+           await session.commitTransaction();
 
             return res.status(200).json({ message: 'Chat deleted' });
 
         } catch (error) {
-           // await session.abortTransaction();
+           await session.abortTransaction();
             res.status(500).json({ error: 'An internal server error occurred.' });
         }finally{
-           // session.endSession();
+           session.endSession();
         }
     }
 };
