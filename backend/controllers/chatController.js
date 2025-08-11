@@ -472,6 +472,46 @@ const chatController = {
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
+    },
+
+    deleteChat: async (req,res) => {
+        // const session = await mongoose.startSession();
+        // session.startTransaction(); 
+
+        try {
+            const { clerkUserId } = req.body;
+            const { chatId } = req.params;
+
+            if (!clerkUserId && !chatId || !mongoose.Types.ObjectId.isValid(chatId)){
+                return res.status(400).json({ error: 'Missing valid Parameters' }); 
+            }
+
+            const chat = await Chat.findById(chatId);
+            if (!chat) {
+                return res.status(404).json({ error: 'Chat not found' });
+            }
+
+            const user = await User.findOne({userId:clerkUserId});
+            if(!user || chat.userId.toString() != user._id.toString()){
+                return res.status(401).json({ error: 'Unauthorised User' });
+            }
+
+            user.chats = user.chats.filter(chat => chat.id !== chatId);
+
+            await ChatQuery.deleteMany({chatId:chatId});
+            await chat.deleteOne();
+            await user.save()
+
+           //await session.commitTransaction();
+
+            return res.status(200).json({ message: 'Chat deleted' });
+
+        } catch (error) {
+           // await session.abortTransaction();
+            res.status(500).json({ error: 'An internal server error occurred.' });
+        }finally{
+           // session.endSession();
+        }
     }
 };
 

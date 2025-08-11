@@ -9,14 +9,14 @@ const imageService = {
                 model: process.env.MODEL_GPT_IMAGE,
                 prompt: prompt,
                 n: 1,
-                size: "1024x1024",
+                size: '1024x1024',
                 quality: "standard",
-                response_format: "url"
+                response_format: "b64_json"
             });
 
             return {
                 success: true,
-                imageUrl: response.data[0].url
+                base64Image: `data:image/png;base64,${response.data[0].b64_json}`,
             };
         } catch (error) {
             return {

@@ -39,16 +39,16 @@ const upload = multer({
 
 // STREAMING ROUTES 
 // Streaming new chat creation
-router.post('/chat/stream', upload.array('files', 5), chatController.handleChatStreamCombined);
-
-// Streaming continue existing chat
-router.post('/chat/:chatId/stream', upload.array('files', 5), chatController.handleChatStreamCombined);
+router.post(['/chat/stream','/chat/:chatId/stream'], upload.array('files', 5), chatController.handleChatStreamCombined);
 
 // EXISTING NON-STREAMING ROUTES
 // Chat routes
 router.post(['/chat', '/chat/:chatId'], upload.array('files', 5), chatController.handleChatCombined);
+
 router.get('/chats/user/:clerkUserId', chatController.getUserChats);
 router.get('/chat/:chatId', chatController.getChatHistory);
+
+router.delete('/chat/:chatId',chatController.deleteChat);
 
 // Model switching routes
 //router.post('/chat/switch-model', chatController.switchModel);

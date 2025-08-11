@@ -72,7 +72,7 @@ const aiService = {
                 const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
                 const imageResult = await imageService.generateImage(lastUserMessage);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
-                yield imageResult.imageUrl;
+                yield imageResult.base64Image;
                 return;
             }
 
