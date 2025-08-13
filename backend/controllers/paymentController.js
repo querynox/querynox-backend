@@ -44,7 +44,6 @@ const paymentController = {
 
         },
 
-
         handleDefault: async (req,res,event) => {
 
             console.log(event.type);
