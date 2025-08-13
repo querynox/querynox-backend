@@ -1,5 +1,4 @@
 const polar = require('../services/polarService');
-const { validateEvent ,WebhookVerificationError } = require('@polar-sh/sdk/webhooks');
 
 const paymentController = {
 
@@ -29,42 +28,33 @@ const paymentController = {
         }
     },
 
-    webhook: async (req, res) => {
-        try{
-            const event = validateEvent(
-                req.body,
-                req.headers,
-                process.env.POLAR_WEBHOOK_SECRET_DEV
-            );
-            
-            switch (event.type) {
-                case "order.paid":
-                    console.log(event)
-                    break;
-            
-                default:
-                    console.log(event.type)
-                    break;
-            }
-
-            res.sendStatus(200)
-            
-        }catch(error){
-            if (error instanceof WebhookVerificationError) {
-                res.status(403).send('BAD WEBHOOK SECRET');
-            }else{
-                res.status(400).json(error);
-            }
-        }
-    },
-
     customerPortal: async (req, res) => {
         const session = await polar.customerSessions.create({
             customerId: "cus_123" // Polar customer ID
         });
         res.json({ url: session.url });
+    },
+
+    webhook : {
+
+        handleOrderPaid: async (req,res,event) => {
+            
+            console.log(event.type);
+            res.status(200);
+
+        },
+
+
+        handleDefault: async (req,res,event) => {
+
+            console.log(event.type);
+            res.status(200);
+
+        },
+
     }
 
 }
+
 
 module.exports = paymentController;
