@@ -1,36 +1,54 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const routes = require('./routes');
+const connectDB = require("./services/databaseService")
+
+const listEndpoints = require('express-list-endpoints');
+const v1Router = require('./routes/v1/router')
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+connectDB();
 
-// Middleware
+
+// Middlewares
 app.use(cors({
   origin: ['http://localhost:5173','http://192.168.1.2:5173'],
   credentials: true // optional, only if you're using cookies or auth headers
 }));
 
 // Standard JSON middleware for all requests
-app.use(express.json({ limit: "10mb" }));
+app.use((req,res,next)=>{
+  if(req.url.includes('webhook')){
+    express.raw({ type: 'application/json' })(req,res,next)
+  }else{
+    express.json({ limit: "10mb" })(req,res,next)
+  }
+});
+
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 // Debug middleware to log requests (remove logging)
 app.use((req, res, next) => {
+  console.log(req.url);
   next();
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {})
-  .catch(err => {
-    // Silent fail
-  });
-
 // Routes
-app.use('/api', routes);
+app.use('/api/v1',v1Router)
+
+//Health Router
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString()
+  });
+});
+
+//Help Router
+app.get(['/help','/'],(req,res)=>{
+  res.json(listEndpoints(app));
+})
 
 // 404 handler
 app.use('*', (req, res) => {
