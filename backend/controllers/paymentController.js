@@ -1,7 +1,5 @@
 const polar = require('../services/polarService');
-const {} = require("@polar-sh/express")
 const { validateEvent ,WebhookVerificationError } = require('@polar-sh/sdk/webhooks');
-const User = require('../models/User');
 
 const paymentController = {
 

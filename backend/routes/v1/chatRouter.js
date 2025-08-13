@@ -16,9 +16,8 @@ router.post(['/', '/:chatId'], upload.array('files', 5), chatController.handleCh
 
 
 router.get('/user/:clerkUserId', chatController.getUserChats);
-router.get('/:chatId', chatController.getChatHistory);
 router.get('/models', chatController.getAvailableModels);
-
+router.get('/:chatId', chatController.getChatHistory);
 
 router.delete('/:chatId',chatController.deleteChat);
 
