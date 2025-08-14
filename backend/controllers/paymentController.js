@@ -15,14 +15,26 @@ const paymentController = {
                 return res.status(400).json({error:"Missing Required Params"})
             }
 
+            let customer;
+
+            try {
+                customer = await polar.customers.getExternal({externalId:userId});
+            } catch (err) {
+                customer = await polar.customers.create({
+                    email: clerkUser.emailAddresses[0].emailAddress,
+                    externalId:userId,
+                    name:clerkUser.fullName,
+                });
+            }
+
             const checkout = await polar.checkouts.create({
                 products: [productId],
                 successUrl: `${callback}?checkout_id={CHECKOUT_ID}`,
-                customerEmail:clerkUser.emailAddresses[0].emailAddress,
-                externalCustomerId:userId,//TODO: create a UUID for polar in user and send that UUID as customerId to polar to prervent edit of email on payment page.
-                metadata: {
-                    source: source,
-                    clerkUserId: userId 
+                customerId:customer.id,
+                customerEmail:customer.email,
+                customerName:customer.name,
+                metadata:{
+                    source: source
                 }
             });
 
