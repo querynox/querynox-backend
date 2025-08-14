@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const ChatSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: String, ref: 'User', required: true },
   title: { type: String, default: 'New Chat' },
   chatName: { type: String, required: true }, // set only at creation, never changes
   model: { type: String, required: true },

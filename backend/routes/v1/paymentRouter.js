@@ -1,28 +1,28 @@
 const express = require('express');
 const paymentController = require('../../controllers/paymentController');
 const { validateEvent ,WebhookVerificationError } = require('@polar-sh/sdk/webhooks');
+const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware');
 const router = express.Router();
 
 
-router.get('/checkout/:productId',paymentController.handleCheckout);
+router.get('/checkout/:productId',clerkAuthMiddleware(requireAuth=true), paymentController.handleCheckout);
 
-
-router.post('/customerPortal',paymentController.customerPortal)
+router.post('/customerPortal',paymentController.customerPortal);
 
 router.post('/webhook',async (req, res) => {
     try{
         const event = validateEvent(req.body,req.headers,process.env.POLAR_WEBHOOK_SECRET_DEV);
-        
         switch (event.type) {
             case "order.paid":
                 await paymentController.webhook.handleOrderPaid(req, res, event);
                 break;
-        
+            case "subscription.active":
+                await paymentController.webhook.handleSubscriptionActive(req, res, event);
+                break;
             default:
                 await paymentController.webhook.handleDefault(req, res, event);
                 break;
         }
-        
     }catch(error){
         if (error instanceof WebhookVerificationError) {
             res.status(403).send('BAD WEBHOOK SECRET');

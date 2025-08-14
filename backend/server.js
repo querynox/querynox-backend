@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require("./services/databaseService")
-
+const { clerkMiddleware } = require('@clerk/express')
 const listEndpoints = require('express-list-endpoints');
 const v1Router = require('./routes/v1/router')
 
@@ -28,8 +28,11 @@ app.use((req,res,next)=>{
 
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Debug middleware to log requests (remove logging)
+app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }))
+
+// Debug middleware to log requests
 app.use((req, res, next) => {
+  process.stdout.write(new Date().toLocaleString()+" : ");
   console.log(req.url);
   next();
 });

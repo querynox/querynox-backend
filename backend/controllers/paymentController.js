@@ -1,22 +1,28 @@
 const polar = require('../services/polarService');
+const { clerkClient } = require('@clerk/express');
 
 const paymentController = {
 
     handleCheckout: async (req,res) => {
         try {
             const { productId } = req.params
-            const { userId, plan, source, callback } = req.query;
-            if(!productId || !userId || !plan || !source){
+            const { source, callback } = req.query;
+            const { userId } = req.auth;
+            
+            const clerkUser = await clerkClient.users.getUser(userId);
+
+            if(!productId || !userId || !source){
                 return res.status(400).json({error:"Missing Required Params"})
             }
 
             const checkout = await polar.checkouts.create({
                 products: [productId],
                 successUrl: `${callback}?checkout_id={CHECKOUT_ID}`,
+                customerEmail:clerkUser.emailAddresses[0].emailAddress,
+                externalCustomerId:userId,//TODO: create a UUID for polar in user and send that UUID as customerId to polar to prervent edit of email on payment page.
                 metadata: {
-                    userId: userId,
-                    planType: plan,
-                    source: source
+                    source: source,
+                    clerkUserId: userId 
                 }
             });
 
@@ -37,18 +43,20 @@ const paymentController = {
 
     webhook : {
 
-        handleOrderPaid: async (req,res,event) => {
-            
-            console.log(event.type);
+        handleOrderPaid: async (req,res,event) => {  
+            console.log(event);
+            console.log(event.metadata.clerkUserId);
             res.status(200);
+        },
 
+        handleSubscriptionActive: async (req,res,event) => {
+            console.log(event.type)
+            res.status(200);
         },
 
         handleDefault: async (req,res,event) => {
-
             console.log(event.type);
             res.status(200);
-
         },
 
     }

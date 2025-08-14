@@ -11,11 +11,12 @@ const chatController = {
     // --- NON-STREAMING METHOD ---
     handleChatCombined: async (req, res) => {
         try {
-            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { prompt, model, systemPrompt, webSearch } = req.body;
+            const { userId } = req.auth;
             const { chatId } = req.params;
             const files = req.files;
 
-            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+            if (!userId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
 
             let chat, user;
 
@@ -31,14 +32,14 @@ const chatController = {
                 if (!chat) return res.status(404).json({ error: 'Chat not found' });
 
                 // Ensuring that user is never undefined but optionally can be removed.
-                user = await User.findOne({ userId: clerkUserId }); 
+                user = await User.findById(userId); 
                 if (!chat) return res.status(404).json({ error: 'User not found' });
 
             }else{
                 //Handleing User Creation(UpInsert)
-                user = await User.findOne({ userId: clerkUserId });
+                user = await User.findById(userId); 
                 if (!user) {
-                    user = new User({ userId: clerkUserId, chats: [] });
+                    user = new User({ _id: userId, chats: [] });
                     await user.save();
                 }
 
@@ -99,10 +100,11 @@ const chatController = {
     // --- STREAMING METHODS ---
     createChatStream: async (req, res) => {
         try {
-            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { prompt, model, systemPrompt, webSearch } = req.body;
+            const { userId } = req.auth;
             const files = req.files;
 
-            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+            if (!userId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
 
             res.writeHead(200, {
                 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache',
@@ -113,16 +115,16 @@ const chatController = {
 
             sendEvent({ type: 'status', message: 'Initializing chat...' });
 
-            let user = await User.findOne({ userId: clerkUserId });
+            let user = await User.findById(userId);
             if (!user) {
-                user = new User({ userId: clerkUserId, chats: [] });
+                user = new User({ _id: userId, chats: [] });
                 await user.save();
             }
 
             sendEvent({ type: 'status', message: 'Generating chat name...' });
             const chatName = await aiService.generateChatname(prompt);
 
-            const chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName });
+            const chat = new Chat({ title: prompt.substring(0, 50), chatName: chatName });
             await chat.save();
             user.chats.push(chat._id);
             await user.save();
@@ -182,11 +184,13 @@ const chatController = {
 
     handleChatStream: async (req, res) => {
         try {
-            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { prompt, model, systemPrompt, webSearch } = req.body;
+            const { userId } = req.auth;
             const { chatId } = req.params;
+
             const files = req.files;
 
-            if (!clerkUserId || !prompt || !model || !chatId) return res.status(400).json({ error: 'Missing required fields' });
+            if (!userId || !prompt || !model || !chatId) return res.status(400).json({ error: 'Missing required fields' });
 
             res.writeHead(200, {
                 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache',
@@ -269,12 +273,12 @@ const chatController = {
 
     handleChatStreamCombined: async (req, res) => {
         try {
-            const { clerkUserId, prompt, model, systemPrompt, webSearch } = req.body;
+            const { prompt, model, systemPrompt, webSearch } = req.body;
+            const { userId } = req.auth;
             const { chatId } = req.params;
             const files = req.files;
-            console.log(req.body)
 
-            if (!clerkUserId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
+            if (!userId || !prompt || !model) return res.status(400).json({ error: 'Missing required fields' });
             
             let chat, user;
 
@@ -305,7 +309,7 @@ const chatController = {
                 }
 
                 // Ensuring that user is never undefined but optionally can be removed.
-                user = await User.findOne({ userId: clerkUserId }); 
+                user = await User.findById(userId); 
                 if (!chat){
                     sendEvent({ type: 'error', error: 'User not found' });
                     res.write(`data: [DONE]\n\n`);
@@ -314,9 +318,9 @@ const chatController = {
 
             }else{
                 //Handleing User Creation(UpInsert)
-                user = await User.findOne({ userId: clerkUserId });
+                user = await User.findById(userId); 
                 if (!user) {
-                    user = new User({ userId: clerkUserId, chats: [] });
+                    user = new User({ _id: userId, chats: [] });
                     await user.save();
                 }
 
@@ -404,10 +408,10 @@ const chatController = {
    
     getUserChats: async (req, res) => {
         try {
-            const { clerkUserId } = req.params;
-            const user = await User.findOne({ userId: clerkUserId });
+            const { userId } = req.auth;
+            const user = await User.findById(userId);
             if (!user) {
-                return res.status(404).json({error:`Specifed user with userid ${clerkUserId} could not be found.`});
+                return res.status(404).json({error:`Specifed user with userid ${userId} could not be found.`});
             }
             const chats = await Chat.find({ _id: { $in: user.chats } }).sort({ updatedAt: -1 }).select('-__v');
             res.status(200).json(chats);
@@ -432,7 +436,8 @@ const chatController = {
     
     switchModel: async (req, res) => {
         try {
-            const { clerkUserId, chatId, newModel, systemPrompt } = req.body;
+            const { chatId, newModel, systemPrompt } = req.body;
+            const { userId } = req.auth;
             const chat = await Chat.findById(chatId);
             if (!chat) {
                 return res.status(404).json({ error: 'Chat not found' });
@@ -479,10 +484,10 @@ const chatController = {
         session.startTransaction(); 
 
         try {
-            const { clerkUserId } = req.body;
+            const { userId } = req.auth;
             const { chatId } = req.params;
 
-            if (!clerkUserId && !chatId || !mongoose.Types.ObjectId.isValid(chatId)){
+            if (!userId && !chatId || !mongoose.Types.ObjectId.isValid(chatId)){
                 return res.status(400).json({ error: 'Missing valid Parameters' }); 
             }
 
@@ -491,7 +496,7 @@ const chatController = {
                 return res.status(404).json({ error: 'Chat not found' });
             }
 
-            const user = await User.findOne({userId:clerkUserId});
+            const user = await User.findById(userId);
             if(!user || chat.userId.toString() != user._id.toString()){
                 return res.status(401).json({ error: 'Unauthorised User' });
             }
