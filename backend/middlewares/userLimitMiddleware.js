@@ -51,7 +51,7 @@ const userLimitMiddleware = () => {
             error += `Web search limit exceeded. Allowed usage is ${product.metadata.webSearchLimit} searches.\n`
         }
 
-        if (req.files && req.files.length >= product.metadata.fileCountLimit) {
+        if (req.files && req.files.length > product.metadata.fileCountLimit) {
             error += `File upload count exceeded. Allowed usage is ${product.metadata.fileCountLimit} files.\n`
         }
 
@@ -79,7 +79,7 @@ const userLimitMiddleware = () => {
             error += `Web search limit exceeded. Allowed usage is ${DEFAULT_LIMITS.webSearchLimit} searches (free tier).\n`;
         }
 
-        if (req.files && req.files.length >= DEFAULT_LIMITS.fileCountLimit) {
+        if (req.files && req.files.length > DEFAULT_LIMITS.fileCountLimit) {
             error += `File upload count exceeded. Allowed usage is ${DEFAULT_LIMITS.fileCountLimit} files (free tier).\n`;
         }
 
