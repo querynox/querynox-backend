@@ -296,7 +296,7 @@ const chatController = {
             const user = req.user;
             const { chatId } = req.params;
 
-            if (!userId && !chatId || !mongoose.Types.ObjectId.isValid(chatId)){
+            if (!chatId || !mongoose.Types.ObjectId.isValid(chatId)){
                 return res.status(400).json({ error: 'Missing valid Parameters' }); 
             }
 
@@ -321,6 +321,7 @@ const chatController = {
 
         } catch (error) {
            await session.abortTransaction();
+           console.log(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }finally{
            session.endSession();
