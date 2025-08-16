@@ -58,6 +58,7 @@ const aiService = {
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
     async* generateStreamingResponse(model, messages, systemPrompt) {
         try {
+            //FIXME: Use Model from data
             const modelMap = {
                 "Claude 3.5 Sonnet": "claude-3-5-sonnet-20240620",
                 "llama3-70b-8192": "llama3-70b-8192",
@@ -68,7 +69,7 @@ const aiService = {
             const selectedModel = modelMap[model] || "gpt-3.5-turbo";
 
             // Handle image generation separately
-            if (model === "dall-e-3") {
+            if (model === "dall-e-3") { //FIXME: Use Model.type from data instead of checking name
                 const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
                 const imageResult = await imageService.generateImage(lastUserMessage);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);

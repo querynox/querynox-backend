@@ -5,22 +5,23 @@ const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware');
 const router = express.Router();
 
 
-router.get('/checkout/:productId',clerkAuthMiddleware(requireAuth=true), paymentController.handleCheckout);
+router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);
 
 router.post('/customerPortal',paymentController.customerPortal);
 
 router.post('/webhook',async (req, res) => {
     try{
         const event = validateEvent(req.body,req.headers,process.env.POLAR_WEBHOOK_SECRET_DEV);
+        req.event = event;
         switch (event.type) {
             case "order.paid":
-                await paymentController.webhook.handleOrderPaid(req, res, event);
+                await paymentController.webhook.handleOrderPaid(req, res);
                 break;
-            case "subscription.active":
-                await paymentController.webhook.handleSubscriptionActive(req, res, event);
+            case "product.updated":
+                await paymentController.webhook.handleProductUpdated(req, res);
                 break;
             default:
-                await paymentController.webhook.handleDefault(req, res, event);
+                await paymentController.webhook.handleDefault(req, res);
                 break;
         }
     }catch(error){

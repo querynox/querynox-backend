@@ -30,9 +30,9 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
 app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }))
 
-// Debug middleware to log requests
+// Debug middleware to log requests 
 app.use((req, res, next) => {
-  process.stdout.write(new Date().toLocaleString()+" : ");
+  process.stdout.write(new Date().toISOString()+" : ");
   console.log(req.url);
   next();
 });

@@ -1,3 +1,5 @@
+const Product = require('../models/Product');
+const User = require('../models/User');
 const polar = require('../services/polarService');
 const { clerkClient } = require('@clerk/express');
 
@@ -7,7 +9,7 @@ const paymentController = {
         try {
             const { productId } = req.params
             const { source, callback } = req.query;
-            const { userId } = req.auth;
+            const userId = req.userId;
             
             const clerkUser = await clerkClient.users.getUser(userId);
 
@@ -33,6 +35,8 @@ const paymentController = {
                 customerId:customer.id,
                 customerEmail:customer.email,
                 customerName:customer.name,
+                externalCustomerId:customer.externalId,
+                customerBillingAddress:{country:"IN"},
                 metadata:{
                     source: source
                 }
@@ -47,6 +51,7 @@ const paymentController = {
     },
 
     customerPortal: async (req, res) => {
+        console.error("NOT IMPLEMENTED") //TODO:
         const session = await polar.customerSessions.create({
             customerId: "cus_123" // Polar customer ID
         });
@@ -55,18 +60,20 @@ const paymentController = {
 
     webhook : {
 
-        handleOrderPaid: async (req,res,event) => {  
-            console.log(event);
-            console.log(event.metadata.clerkUserId);
+        handleOrderPaid: async (req,res) => {  
+            const data = req.event.data;
+            await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id});
             res.status(200);
         },
 
-        handleSubscriptionActive: async (req,res,event) => {
-            console.log(event.type)
+        handleProductUpdated: async (req,res) => {
+            const _product = req.event.data;
+            await Product.updateOne({_id:_product.id},{..._product},{upsert:true});
             res.status(200);
         },
 
-        handleDefault: async (req,res,event) => {
+        handleDefault: async (req,res) => {
+            const event = req.event;
             console.log(event.type);
             res.status(200);
         },

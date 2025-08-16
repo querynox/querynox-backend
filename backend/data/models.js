@@ -6,4 +6,4 @@ const models = [
     { name: "dall-e-3", category: "Image Generation", description: "High-quality image generation" }
 ];
 
-export default models
+module.exports = models

@@ -5,15 +5,16 @@ const router = express.Router();
 //Middleware
 const upload = require('../../services/multerService');
 const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware')
+const userLimitMiddleware = require('../../middlewares/userLimitMiddleware')
 
-router.post(['/stream','/:chatId/stream'], clerkAuthMiddleware(requireAuth=true) ,upload.array('files', 5), chatController.handleChatStreamCombined);
-router.post(['/', '/:chatId'],clerkAuthMiddleware(requireAuth=true), upload.array('files', 5), chatController.handleChatCombined);
+router.post(['/stream','/:chatId/stream'], clerkAuthMiddleware(requestUser = true),upload.array('files', 10),userLimitMiddleware(), chatController.handleChatStreamCombined);
+router.post(['/', '/:chatId'],clerkAuthMiddleware(requestUser = true), upload.array('files', 10), userLimitMiddleware(),chatController.handleChatCombined);
 
 router.get('/models', chatController.getAvailableModels);
-router.get('/user',clerkAuthMiddleware(requireAuth=true) , chatController.getUserChats);
-router.get('/:chatId',clerkAuthMiddleware(requireAuth=true), chatController.getChatHistory);
+router.get('/user',clerkAuthMiddleware(requestUser = true), chatController.getUserChats);
+router.get('/:chatId',clerkAuthMiddleware(), chatController.getChatHistory);
 
-router.delete('/:chatId',clerkAuthMiddleware(requireAuth=true),chatController.deleteChat);
+router.delete('/:chatId',clerkAuthMiddleware(requestUser = true),chatController.deleteChat);
 
 
 module.exports = router;
