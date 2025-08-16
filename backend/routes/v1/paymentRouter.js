@@ -6,6 +6,7 @@ const router = express.Router();
 
 
 router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);
+router.get('/status/:checkoutId', paymentController.validateCheckout);
 
 router.post('/customerPortal',paymentController.customerPortal);
 

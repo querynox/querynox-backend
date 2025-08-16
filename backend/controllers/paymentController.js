@@ -10,7 +10,7 @@ const paymentController = {
             const { productId } = req.params
             const { source, callback } = req.query;
             const userId = req.userId;
-            
+
             const clerkUser = await clerkClient.users.getUser(userId);
 
             if(!productId || !userId || !source){
@@ -56,6 +56,42 @@ const paymentController = {
             customerId: "cus_123" // Polar customer ID
         });
         res.json({ url: session.url });
+    },
+
+    validateCheckout: async (req, res) => {
+        try{
+            const { checkoutId } = req.params;
+            const checkout = await polar.checkouts.get({ id: checkoutId });
+
+            return res.status(200).json({
+                id: checkout.id,
+                status: checkout.status,
+                customer: {
+                    id: checkout.customerId,
+                    email: checkout.customerEmail,
+                    name: checkout.customerName,
+                    clerkUserId: checkout.externalCustomerId,
+                },
+                product: {
+                    id: checkout.product?.id,
+                    name: checkout.product?.name,
+                    description: checkout.product?.description,
+                    recurringInterval: checkout.product?.recurringInterval,
+                    isRecurring: checkout.product?.isRecurring,
+                    isArchived:checkout.product?.isArchived,
+                    organizationId:checkout.product?.organizationId,
+                    modifiedAt:checkout.product?.modifiedAt,
+                    createdAt:checkout.product?.createdAt
+                },
+                orderId: checkout.orderId,
+                createdAt: checkout.createdAt
+            });
+
+        } catch (err) {
+            if (err.response?.status === 404) {
+                return res.status(404).json({"status":"notfound"});
+            }
+        }  
     },
 
     webhook : {
