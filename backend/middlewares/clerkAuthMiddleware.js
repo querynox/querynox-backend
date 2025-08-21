@@ -1,9 +1,15 @@
+require('dotenv').config();
+
 const { getAuth } = require('@clerk/express');
 const User = require('../models/User')
 
 const clerkAuthMiddleware = (requestUser = false, upInsert = true) => {
   return async (req, res, next) => {
-    const { userId } = getAuth(req);
+    let userId = getAuth(req).userId;
+
+    if(!userId && process.env.NODE_ENV=="development"){
+      userId = req.query.userId;
+    }
 
     if (!userId) {
       return res.status(401).json({ error: 'Not authenticated' });
