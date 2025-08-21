@@ -1,4 +1,3 @@
-const User = require('../models/User');
 const Chat = require('../models/Chat');
 const ChatQuery = require('../models/ChatQuery');
 const ragService = require('../services/ragService');
@@ -35,22 +34,22 @@ const chatController = {
                 const chatName = await aiService.generateChatname(prompt);
                 chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName ,  model, systemPrompt, webSearch });
             }
-            
-            let context = '';
-            if (webSearch == "true" || webSearch == true) {
-                context += await webSearchService.search(prompt);
-                user.usedWebSearch++;
-            }
-            if (files && files.length > 0) {
-                context += await ragService.getContextFromFiles(prompt, files);
-                user.usedFileRag++;
-            }
 
             const previousQueries = chatId ? await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 }) : [];
             const conversationHistory = previousQueries.map(q => ([
                 { role: 'user', content: q.prompt },
                 { role: 'assistant', content: q.response }
             ])).flat();
+            
+            let context = '';
+            if (webSearch == "true" || webSearch == true) {
+                context += await webSearchService.search([...conversationHistory, { role: 'user', content: prompt }]);
+                user.usedWebSearch++;
+            }
+            if (files && files.length > 0) {
+                context += await ragService.getContextFromFiles(prompt, files);
+                user.usedFileRag++;
+            }
 
             const augmentedPrompt = `${prompt}${context}`;
             const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
@@ -140,10 +139,15 @@ const chatController = {
             sendEvent({ type: 'status', message: 'Loading conversation history...' });
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
+            const conversationHistory = previousQueries.map(q => ([
+                { role: 'user', content: q.prompt },
+                { role: 'assistant', content: q.response }
+            ])).flat();
+
             let context = '';
             if (webSearch == "true" || webSearch == true) {
                 sendEvent({ type: 'status', message: 'Searching the web...' });
-                context += await webSearchService.search(prompt);
+                context += await webSearchService.search([...conversationHistory, { role: 'user', content: prompt }]);
                 user.usedWebSearch++;
                 sendEvent({ type: 'status', message: 'Web search completed.' });
             }
@@ -155,13 +159,9 @@ const chatController = {
                 sendEvent({ type: 'status', message: 'File processing completed.' });
             }
 
-            const conversationHistory = previousQueries.map(q => ([
-                { role: 'user', content: q.prompt },
-                { role: 'assistant', content: q.response }
-            ])).flat();
-
             const augmentedPrompt = `${prompt}${context}`;
             const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
+
 
             sendEvent({ type: 'status', message: 'Generating AI response...' });
 

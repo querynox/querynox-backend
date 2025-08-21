@@ -1,12 +1,15 @@
 const axios = require('axios');
+const { generateContextForWebSearch } = require('./aiService');
 
 const webSearchService = {
-    search: async (query) => {
+    search: async (messages) => {
         try {
             // Check if required environment variables are set
             if (!process.env.GOOGLE_API_KEY || !process.env.GOOGLE_SEARCH_ENGINE_ID) {
                 return '';
             }
+
+            const query = await generateContextForWebSearch(messages);
 
             const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
                 params: {

@@ -54,6 +54,34 @@ const aiService = {
             return 'New Chat';
         }
     },
+
+    async generateContextForWebSearch(messages) {
+        try {
+            const groqResponse = await groq.chat.completions.create({
+                messages: [
+                    { 
+                        role: "system",   
+                        content: `You are a web search query resolver.
+                        Your job is to take the user's latest query and return ONLY a single, complete search query.
+                        Rules:
+                        - If the query uses pronouns (it, they, he, she, this, that, etc.) or lacks context, replace them with the correct entity from chat history.
+                        - If the query is already complete, return it as is.
+                        - Do NOT add explanations, notes, or sentences. Return ONLY the raw search query string.
+                        ` 
+                    },
+                    ...messages
+                ],
+                model: "llama3-70b-8192",
+                max_tokens: 30,
+                temperature: 0.2
+            });
+            const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
+            return generatedQuestion || messages.pop().content;
+        } catch (error) {
+            console.error("Chatname generation failed:", error);
+            return 'New Chat';
+        }
+    },
     
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
     async* generateStreamingResponse(model, messages, systemPrompt) {
