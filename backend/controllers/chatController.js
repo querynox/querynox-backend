@@ -5,6 +5,7 @@ const webSearchService = require('../services/webSearchService');
 const aiService = require('../services/aiService');
 const models = require('../data/models');
 const { default: mongoose } = require('mongoose');
+const { MAX_MESSAGE_SIZE } = require('../data/configs');
 
 const chatController = {
     // --- NON-STREAMING METHOD ---
@@ -52,7 +53,27 @@ const chatController = {
             }
 
             const augmentedPrompt = `${prompt}${context}`;
-            const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
+            let messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
+
+            //Generate Conversation history if messages is greater than MAX_MESSAGE_SIZE
+            if (messages.length > MAX_MESSAGE_SIZE) {
+                // first n - x messages
+                const oldMessages = messages.slice(0, messages.length - MAX_MESSAGE_SIZE);
+
+                // last x messages remain as they are
+                const recentMessages = messages.slice(-MAX_MESSAGE_SIZE);
+
+                // generate summary from old messages
+                const summary = await aiService.generateConversationSummary(oldMessages);
+
+                // rebuild messages with summary + recent
+                messages = [
+                    { role: "user", content: summary },
+                    { role: "assistant", content: "summary noted." },
+                    ...recentMessages
+                ];
+            }
+
 
             const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
             if(model === "dall-e-3"){ //FIXME: Use Model.type from data instead of checking name
@@ -160,8 +181,26 @@ const chatController = {
             }
 
             const augmentedPrompt = `${prompt}${context}`;
-            const messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
+            let messages = [...conversationHistory, { role: 'user', content: augmentedPrompt }];
 
+            //Generate Conversation history if messages is greater than MAX_MESSAGE_SIZE
+            if (messages.length > MAX_MESSAGE_SIZE) {
+                // first n - x messages
+                const oldMessages = messages.slice(0, messages.length - MAX_MESSAGE_SIZE);
+
+                // last x messages remain as they are
+                const recentMessages = messages.slice(-MAX_MESSAGE_SIZE);
+
+                // generate summary from old messages
+                const summary = await aiService.generateConversationSummary(oldMessages);
+
+                // rebuild messages with summary + recent
+                messages = [
+                    { role: "user", content: summary },
+                    { role: "assistant", content: "summary noted." },
+                    ...recentMessages
+                ];
+            }
 
             sendEvent({ type: 'status', message: 'Generating AI response...' });
 
@@ -244,41 +283,42 @@ const chatController = {
         }
     },
     
-    switchModel: async (req, res) => {
-        try {
-            const { chatId, newModel, systemPrompt } = req.body;
-            const chat = await Chat.findById(chatId);
-            if (!chat) {
-                return res.status(404).json({ error: 'Chat not found' });
-            }
-            const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-            const lastQuery = previousQueries[previousQueries.length - 1];
-            const oldModel = lastQuery ? lastQuery.model : 'no previous model';
-            if (lastQuery && lastQuery.model === newModel) {
-                return res.status(200).json({ message: 'Model is already set to ' + newModel, chat: chat });
-            }
-            let conversationSummary = 'Previous conversation context preserved.';
-            if (previousQueries.length > 0) {
-                try {
-                    conversationSummary = await aiService.generateConversationSummary(previousQueries);
-                } catch (summaryError) {
-                    console.error('Summary generation error on model switch:', summaryError);
-                }
-            }
-            const switchChatQuery = new ChatQuery({
-                chatId: chat._id, prompt: `(System: Model switched from ${oldModel} to ${newModel})`,
-                model: newModel, systemPrompt: systemPrompt,
-                webSearch: false, response: conversationSummary
-            });
-            await switchChatQuery.save();
-            chat.updatedAt = Date.now();
-            await chat.save();
-            res.status(200).json({ message: `Successfully switched from ${oldModel} to ${newModel}`, chat: chat });
-        } catch (error) {
-            console.error('Switch Model Error:', error);
-            res.status(500).json({ error: 'An internal server error occurred.' });
-        }
-    },
+    // Will NOT work now because generateConversationSummary is changed!!!
+    // switchModel: async (req, res) => {
+    //     try {
+    //         const { chatId, newModel, systemPrompt } = req.body;
+    //         const chat = await Chat.findById(chatId);
+    //         if (!chat) {
+    //             return res.status(404).json({ error: 'Chat not found' });
+    //         }
+    //         const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
+    //         const lastQuery = previousQueries[previousQueries.length - 1];
+    //         const oldModel = lastQuery ? lastQuery.model : 'no previous model';
+    //         if (lastQuery && lastQuery.model === newModel) {
+    //             return res.status(200).json({ message: 'Model is already set to ' + newModel, chat: chat });
+    //         }
+    //         let conversationSummary = 'Previous conversation context preserved.';
+    //         if (previousQueries.length > 0) {
+    //             try {
+    //                 conversationSummary = await aiService.generateConversationSummary(previousQueries);
+    //             } catch (summaryError) {
+    //                 console.error('Summary generation error on model switch:', summaryError);
+    //             }
+    //         }
+    //         const switchChatQuery = new ChatQuery({
+    //             chatId: chat._id, prompt: `(System: Model switched from ${oldModel} to ${newModel})`,
+    //             model: newModel, systemPrompt: systemPrompt,
+    //             webSearch: false, response: conversationSummary
+    //         });
+    //         await switchChatQuery.save();
+    //         chat.updatedAt = Date.now();
+    //         await chat.save();
+    //         res.status(200).json({ message: `Successfully switched from ${oldModel} to ${newModel}`, chat: chat });
+    //     } catch (error) {
+    //         console.error('Switch Model Error:', error);
+    //         res.status(500).json({ error: 'An internal server error occurred.' });
+    //     }
+    // },
 
     getAvailableModels: async (req, res) => {
         try {

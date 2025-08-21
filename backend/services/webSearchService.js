@@ -10,6 +10,7 @@ const webSearchService = {
             }
 
             const query = await generateContextForWebSearch(messages);
+            console.log(query)
 
             const response = await axios.get('https://www.googleapis.com/customsearch/v1', {
                 params: {

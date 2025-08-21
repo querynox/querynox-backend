@@ -173,12 +173,11 @@ const aiService = {
     },
 
     
-    async generateConversationSummary(chatQueries) {
-        
+    async generateConversationSummary(messages) {   
         try {
-            if (!chatQueries || chatQueries.length === 0) return '';
-            const conversation = chatQueries.map(q => `User: ${q.prompt}\nAssistant: ${q.response}`).join('\n\n');
-            const summaryPrompt = `Concisely summarize the key points of this conversation:\n\n${conversation}`;
+            if (!messages || messages.length === 0) return '';
+            const _messages = messages.map(q => `${q.role}:${q.content}`).join('\n\n');
+            const summaryPrompt = `Concisely summarize the key points of this conversation:\n\n${_messages}`;
             const groqResponse = await groq.chat.completions.create({
                 messages: [{ role: "user", content: summaryPrompt }],
                 model: "llama3-70b-8192",
