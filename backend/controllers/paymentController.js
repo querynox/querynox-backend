@@ -98,7 +98,7 @@ const paymentController = {
 
         handleOrderPaid: async (req,res) => {  
             const data = req.event.data;
-            await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id});
+            const response = await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id},{upsert:true});
             res.status(200);
         },
 
