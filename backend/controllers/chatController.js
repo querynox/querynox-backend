@@ -246,7 +246,7 @@ const chatController = {
                 sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
             }
 
-            res.end();
+            res.status(200).end();
 
         } catch (error) {
             console.error('Streaming handleChat error:', error);

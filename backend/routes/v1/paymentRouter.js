@@ -21,6 +21,9 @@ router.post('/webhook',async (req, res) => {
             case "product.updated":
                 await paymentController.webhook.handleProductUpdated(req, res);
                 break;
+            case "subscription.revoked":
+                await paymentController.webhook.handleSubscriptionRevoked(req,res);
+                break;
             default:
                 await paymentController.webhook.handleDefault(req, res);
                 break;

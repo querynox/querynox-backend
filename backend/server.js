@@ -4,6 +4,9 @@ const cors = require('cors');
 const connectDB = require("./services/databaseService")
 const { clerkMiddleware } = require('@clerk/express')
 const listEndpoints = require('express-list-endpoints');
+const morgan = require('morgan')
+require('./configs/morganFormatter')
+
 const v1Router = require('./routes/v1/router')
 
 const app = express();
@@ -31,11 +34,7 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }))
 
 // Debug middleware to log requests 
-app.use((req, res, next) => {
-  process.stdout.write(new Date().toISOString()+" : ");
-  console.log(req.url);
-  next();
-});
+app.use(morgan("dev-with-time"));
 
 // Routes
 app.use('/api/v1',v1Router)
@@ -50,7 +49,7 @@ app.get('/health', (req, res) => {
 
 //Help Router
 app.get(['/help','/'],(req,res)=>{
-  res.json(listEndpoints(app));
+  res.json(listEndpoints(app),);
 })
 
 // 404 handler

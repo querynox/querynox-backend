@@ -116,21 +116,30 @@ const paymentController = {
     webhook : {
 
         handleOrderPaid: async (req,res) => {  
+            console.log(req.event.type);
             const data = req.event.data;
-            const response = await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id},{upsert:true});
-            res.status(200);
+            await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id},{upsert:true});
+            res.status(200).end();
         },
 
         handleProductUpdated: async (req,res) => {
+            console.log(req.event.type);
             const _product = req.event.data;
             await Product.updateOne({_id:_product.id},{..._product},{upsert:true});
-            res.status(200);
+            res.status(200).end();
+        },
+
+        handleSubscriptionRevoked: async(req,res) => {
+            console.log(req.event.type);
+            const data = req.event.data;
+            await User.updateOne({_id:data.metadata.externalCustomerId} , {productId:null}); //Used data.metadata.externalCustomerId because data.customer.externalId is always 'null'.
+            res.status(200).end();
         },
 
         handleDefault: async (req,res) => {
             const event = req.event;
             console.log(event.type);
-            res.status(200);
+            res.status(200).end();
         },
 
     }
