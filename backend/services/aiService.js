@@ -65,6 +65,7 @@ const aiService = {
                         Your job is to take the user's latest query and return ONLY a single, complete search query.
                         Rules:
                         - If the query uses pronouns (it, they, he, she, this, that, etc.) or lacks context, replace them with the correct entity from chat history.
+                        - If the query requires certain context from previous chats, ADD that context from chat history.
                         - If the query is already complete, return it as is.
                         - Do NOT add explanations, notes, or sentences. Return ONLY the raw search query string.
                         ` 

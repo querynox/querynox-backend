@@ -10,11 +10,12 @@ function colorStatus(status) {
 
 function colorMethod(method) {
   switch (method) {
-    case "GET": return `\x1b[34m${method}\x1b[0m`;   // blue
-    case "POST": return `\x1b[32m${method}\x1b[0m`;  // green
-    case "PUT": return `\x1b[33m${method}\x1b[0m`;   // yellow
+    case "GET": return `\x1b[32m${method}\x1b[0m`;    // green
+    case "POST": return `\x1b[34m${method}\x1b[0m`;   // blue
+    case "PUT": return `\x1b[33m${method}\x1b[0m`;    // yellow
+    case "PATCH": return `\x1b[36m${method}\x1b[0m`;  // cyan
     case "DELETE": return `\x1b[31m${method}\x1b[0m`; // red
-    default: return `\x1b[37m${method}\x1b[0m`;      // white
+    default: return `\x1b[37m${method}\x1b[0m`;       // white
   }
 }
 
@@ -30,14 +31,16 @@ morgan.format("dev-with-time", function (tokens, req, res) {
   const status = Number(tokens.status(req, res));
   const method = tokens.method(req, res);
   const responseTime = parseFloat(tokens["response-time"](req, res)) || 0;
+  const totalTime = parseFloat(tokens["total-time"](req, res)) || 0;
 
   return [
     `\x1b[90m[${tokens.time(req, res)}]\x1b[0m`, // gray time
     colorMethod(method),                          // colored method
     `\x1b[37m${tokens.url(req, res)}\x1b[0m`,    // white URL
     colorStatus(status),                          // colored status
-    colorResponseTime(responseTime),              // colored response time
+    colorResponseTime(responseTime),             // colored response time
+    colorResponseTime(totalTime),           // colored response time
     "-",
-    `\x1b[36m${tokens.res(req, res, "content-length") || "0"}\x1b[0m` // cyan length
+    `\x1b[90m${tokens.res(req, res, "content-length") || "0"}\x1b[0m` // cyan length
   ].join(" ");
 });
