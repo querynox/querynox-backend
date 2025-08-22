@@ -8,12 +8,12 @@ const paymentController = {
     handleCheckout: async (req,res) => {
         try {
             const { productId } = req.params
-            const { source, callback } = req.query;
+            const { callback , ...metadata } = req.query;
             const userId = req.userId;
 
             const clerkUser = await clerkClient.users.getUser(userId);
 
-            if(!productId || !userId || !source){
+            if(!productId || !userId){
                 return res.status(400).json({error:"Missing Required Params"})
             }
 
@@ -38,7 +38,8 @@ const paymentController = {
                 externalCustomerId:customer.externalId,
                 customerBillingAddress:{country:"IN"},
                 metadata:{
-                    source: source
+                    ...metadata,
+                    externalCustomerId:customer.externalId,
                 }
             });
 
@@ -51,11 +52,29 @@ const paymentController = {
     },
 
     customerPortal: async (req, res) => {
-        console.error("NOT IMPLEMENTED") //TODO:
-        const session = await polar.customerSessions.create({
-            customerId: "cus_123" // Polar customer ID
-        });
-        res.json({ url: session.url });
+        try{
+            const userId = req.userId;
+            const clerkUser = await clerkClient.users.getUser(userId);
+            let session;
+            try {
+                session = await polar.customerSessions.create({
+                    externalCustomerId: userId // Polar customer ID
+                });
+            } catch (err) {
+                customer = await polar.customers.create({
+                    email: clerkUser.emailAddresses[0].emailAddress,
+                    externalId:userId,
+                    name:clerkUser.fullName,
+                });
+                session = await polar.customerSessions.create({
+                    externalCustomerId: userId // Polar customer ID
+                });
+            }
+            res.json({ url: session.customerPortalUrl });
+
+        }catch(error){
+            res.status(500).json({ error: error.message});
+        }
     },
 
     validateCheckout: async (req, res) => {

@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);
 router.get('/status/:checkoutId', paymentController.validateCheckout);
 
-router.post('/customerPortal',paymentController.customerPortal);
+router.get('/portal',clerkAuthMiddleware(),paymentController.customerPortal);
 
 router.post('/webhook',async (req, res) => {
     try{
