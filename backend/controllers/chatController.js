@@ -76,7 +76,7 @@ const chatController = {
 
 
             const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
-            if(model === "dall-e-3"){ //FIXME: Use Model.type from data instead of checking name
+            if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                 user.usedImageGeneration++;
             }else{
                 user.usedChatGeneration++;
@@ -210,7 +210,7 @@ const chatController = {
                     fullResponse += chunk;
                     sendEvent({ type: 'content', content: chunk });
                 }
-                if(model === "dall-e-3"){ //FIXME: Use Model.type from data instead of checking name
+                if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                     user.usedImageGeneration++;
                 }else{
                     user.usedChatGeneration++;
