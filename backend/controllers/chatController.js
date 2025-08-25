@@ -37,10 +37,12 @@ const chatController = {
             }
 
             const previousQueries = chatId ? await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 }) : [];
-            const conversationHistory = previousQueries.map(q => ([
-                { role: 'user', content: q.prompt },
-                { role: 'assistant', content: q.response }
-            ])).flat();
+            const conversationHistory = previousQueries.map(q => {
+                if(models.find(m => m.name == q.model).category == "Image Generation"){
+                    return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: "The Image was Generated" }]
+                }
+                return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: q.response }]
+            }).flat();
             
             let context = '';
             if (webSearch == "true" || webSearch == true) {
@@ -160,10 +162,13 @@ const chatController = {
             sendEvent({ type: 'status', message: 'Loading conversation history...' });
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
-            const conversationHistory = previousQueries.map(q => ([
-                { role: 'user', content: q.prompt },
-                { role: 'assistant', content: q.response }
-            ])).flat();
+            const conversationHistory = previousQueries.map(q => {
+                if(models.find(m => m.name == q.model).category == "Image Generation"){
+                    return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: "The Image was Generated" }]
+                }
+                return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: q.response }]
+            }).flat();
+            
 
             let context = '';
             if (webSearch == "true" || webSearch == true) {

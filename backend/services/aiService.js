@@ -51,6 +51,7 @@ const aiService = {
 
     async generateContextForWebSearch(messages) {
         try {
+            const recentMessages = messages.slice(-10);
             const groqResponse = await groq.chat.completions.create({
                 messages: [
                     { 
@@ -64,11 +65,41 @@ const aiService = {
                         - Do NOT add explanations, notes, or sentences. Return ONLY the raw search query string.
                         ` 
                     },
-                    ...messages
+                    ...recentMessages
                 ],
                 model: "llama3-70b-8192",
                 max_tokens: 30,
                 temperature: 0.2
+            });
+            const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
+            return generatedQuestion || messages.pop().content;
+        } catch (error) {
+            console.error("Chatname generation failed:", error);
+            return 'New Chat';
+        }
+    },
+
+    async generateContextForImageGeneration(messages) {
+        try {
+            const recentMessages = messages.slice(-10);
+            const groqResponse = await groq.chat.completions.create({
+                messages: [
+                    { 
+                        role: "system",   
+                        content: `You are an image prompt generator.
+                            Your job is to take the user's latest request and return ONLY a single, complete prompt suitable for image generation.
+
+                            Rules:
+                            - If the request uses pronouns (it, they, he, she, this, that, etc.) or lacks context, replace them with the correct entity from chat history.
+                            - If important context from previous messages is required, ADD that context.
+                            - Focus on making the prompt visually descriptive (objects, people, setting, style, colors).
+                            - Do NOT add explanations, notes, or sentences. Return ONLY the raw image prompt string.`
+                    },
+                    ...recentMessages
+                ],
+                model: "llama3-70b-8192",
+                max_tokens: 30,
+                temperature: 0.1
             });
             const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
             return generatedQuestion || messages.pop().content;
@@ -83,11 +114,12 @@ const aiService = {
         try {
 
             const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
-
+            console.log(messages)
             // Handle image generation separately
-             if(selectedModel.category === "Image Generation"){
-                const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
-                const imageResult = await imageService.generateImage(lastUserMessage);
+            if(selectedModel.category === "Image Generation"){
+                const prompt = await this.generateContextForImageGeneration(messages);
+                console.log(prompt)
+                const imageResult = await imageService.generateImage(prompt);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
                 yield imageResult.base64Image;
                 return;
