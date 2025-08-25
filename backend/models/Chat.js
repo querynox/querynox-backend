@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ChatSchema = new mongoose.Schema({
+const chatSchema = new mongoose.Schema({
   userId: { type: String, ref: 'User', required: true },
   title: { type: String, default: 'New Chat' },
   chatName: { type: String, required: true }, // set only at creation, never changes
@@ -11,4 +11,6 @@ const ChatSchema = new mongoose.Schema({
   updatedAt: { type: Number, default: Date.now }
 });
 
-module.exports = mongoose.model('Chat', ChatSchema); 
+chatSchema.index({ userId: 1, createdAt: -1 });
+
+module.exports = mongoose.model('Chat', chatSchema); 

@@ -12,4 +12,6 @@ const userSchema = new mongoose.Schema({
   limitsUpdatedAt: {type:Number, default:Date.now()}
 },{_id:false});
 
+userSchema.index({ productId: 1 });
+
 module.exports = mongoose.model('User', userSchema); 

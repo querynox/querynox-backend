@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ChatQuerySchema = new mongoose.Schema({
+const chatQuerySchema = new mongoose.Schema({
   chatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat', required: true },
   prompt: { type: String, required: true },
   model: { type: String, required: true },
@@ -11,4 +11,6 @@ const ChatQuerySchema = new mongoose.Schema({
   updatedAt: { type: Number, default: Date.now }
 });
 
-module.exports = mongoose.model('ChatQuery', ChatQuerySchema);
+chatQuerySchema.index({ chatId: 1, createdAt: -1 }); 
+
+module.exports = mongoose.model('ChatQuery', chatQuerySchema);

@@ -23,4 +23,6 @@ const productSchema = new mongoose.Schema({
     attachedCustomFields: { type: Array, default: [] },
 });
 
+productSchema.index({ organizationId: 1, isArchived: 1 });
+
 module.exports = mongoose.model("Product", productSchema);
