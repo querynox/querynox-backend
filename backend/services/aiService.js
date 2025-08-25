@@ -3,6 +3,7 @@ const Groq = require('groq-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Anthropic = require('@anthropic-ai/sdk');
 const imageService = require('./imageService');
+const models = require('../data/models');
 
 // Initialize AI Clients
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -21,15 +22,8 @@ const aiService = {
     // This helper function is no longer needed with modern message array formats
     // but kept in case you have other uses for it.
     trimPromptForModel(prompt, model) {
-        if (typeof prompt !== 'string') return ''; // Prevent crashes
-        const limits = {
-            "Claude Haiku 3.5": 200000,
-            "llama-3.3-70b-versatile": 32768,
-            "gpt-3.5-turbo": 16385,
-            "gemini-2.5-flash": 1000000,
-            "dall-e-3": 4000
-        };
-        const limit = limits[model] || 8000;
+        if (typeof prompt !== 'string') return '';
+        const limit = models.find(model => model.name == model)?.limit || 8000;
         return prompt.length > limit ? prompt.substring(0, limit) : prompt;
     },
 
@@ -87,18 +81,11 @@ const aiService = {
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
     async* generateStreamingResponse(model, messages, systemPrompt) {
         try {
-            //FIXME: Use Model from data
-            const modelMap = {
-                "Claude 3.5 Sonnet": "claude-3-5-sonnet-20240620",
-                "llama3-70b-8192": "llama3-70b-8192",
-                "gpt-3.5-turbo": "gpt-3.5-turbo",
-                "gemini-1.5-flash": "gemini-1.5-flash",
-                "dall-e-3": "dall-e-3"
-            };
-            const selectedModel = modelMap[model] || "gpt-3.5-turbo";
+
+            const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
 
             // Handle image generation separately
-            if (model === "dall-e-3") { //FIXME: Use Model.type from data instead of checking name
+             if(selectedModel.category === "Image Generation"){
                 const lastUserMessage = messages.filter(m => m.role === 'user').pop()?.content || '';
                 const imageResult = await imageService.generateImage(lastUserMessage);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
@@ -112,7 +99,7 @@ const aiService = {
             if (model === "Claude 3.5 Sonnet") {
                 if (!anthropic) throw new Error('Claude API key not configured.');
                 const stream = await anthropic.messages.create({
-                    model: selectedModel,
+                    model: selectedModel.fullName,
                     max_tokens: 4096,
                     system: finalSystemPrompt,
                     messages: messages,
@@ -126,7 +113,7 @@ const aiService = {
             } else if (model === "llama3-70b-8192") {
                  const stream = await groq.chat.completions.create({
                     messages: [{ role: 'system', content: finalSystemPrompt }, ...messages],
-                    model: selectedModel,
+                    model: selectedModel.fullName,
                     max_tokens: 4096,
                     stream: true,
                 });
@@ -134,7 +121,7 @@ const aiService = {
                     yield chunk.choices[0]?.delta?.content || '';
                 }
             } else if (model === "gemini-1.5-flash") {
-                const geminiModel = genAI.getGenerativeModel({ model: selectedModel, systemInstruction: finalSystemPrompt });
+                const geminiModel = genAI.getGenerativeModel({ model: selectedModel.fullName, systemInstruction: finalSystemPrompt });
                 const contents = messages.map(msg => ({
                     role: msg.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' for assistant role
                     parts: [{ text: msg.content }]
@@ -145,7 +132,7 @@ const aiService = {
                 }
             } else { // Default to GPT
                 const stream = await openai.chat.completions.create({
-                    model: selectedModel,
+                    model: selectedModel.fullName,
                     messages: [{ role: 'system', content: finalSystemPrompt }, ...messages],
                     max_tokens: 4096,
                     stream: true,
