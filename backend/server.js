@@ -1,26 +1,26 @@
 require('dotenv').config();
+require('./configs/morganFormatter')
+require("./services/databaseService")()
+
 const express = require('express');
+
 const cors = require('cors');
-const connectDB = require("./services/databaseService")
 const { clerkMiddleware } = require('@clerk/express')
 const listEndpoints = require('express-list-endpoints');
 const morgan = require('morgan')
-require('./configs/morganFormatter')
+const compresison = require('compression')
 
 const v1Router = require('./routes/v1/router')
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
-connectDB();
-
 
 // Middlewares
 app.use(cors({
   origin: ['http://localhost:5173','http://192.168.1.2:5173'],
   credentials: true // optional, only if you're using cookies or auth headers
 }));
-
-// Standard JSON middleware for all requests
 app.use((req,res,next)=>{
   if(req.url.includes('webhook')){
     express.raw({ type: 'application/json' })(req,res,next)
@@ -28,10 +28,9 @@ app.use((req,res,next)=>{
     express.json({ limit: "10mb" })(req,res,next)
   }
 });
-
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-
 app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }))
+app.use(compresison())
 
 // Debug middleware to log requests 
 app.use(morgan("dev-with-time"));
