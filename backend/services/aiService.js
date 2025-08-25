@@ -114,11 +114,9 @@ const aiService = {
         try {
 
             const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
-            console.log(messages)
             // Handle image generation separately
             if(selectedModel.category === "Image Generation"){
                 const prompt = await this.generateContextForImageGeneration(messages);
-                console.log(prompt)
                 const imageResult = await imageService.generateImage(prompt);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
                 yield imageResult.base64Image;
