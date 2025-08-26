@@ -7,6 +7,7 @@ const chatSchema = new mongoose.Schema({
   model: { type: String, required: true },
   systemPrompt: { type: String },
   webSearch: { type: Boolean, default: false },
+  isShared: { type: Boolean, default: false },
   createdAt: { type: Number, default: Date.now },
   updatedAt: { type: Number, default: Date.now }
 });

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
   _id: { type: String },
   chats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat', default:[] }],
+  bookmarkedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat', default:[] }],
   createdAt: { type: Number, default: Date.now },
   productId: { type: String, ref: 'Product', default:null },
   usedChatGeneration: { type: Number, default:0},

@@ -8,6 +8,74 @@ const { default: mongoose } = require('mongoose');
 const { MAX_MESSAGE_SIZE } = require('../data/configs');
 
 const chatController = {
+    // --- PUBLIC: Get shared chat (read-only) ---
+    getPublicSharedChat: async (req, res) => {
+        try {
+            const { chatId } = req.params;
+
+            if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                return res.status(404).json({ message: 'Chat not found or not shared' });
+            }
+
+            const chat = await Chat.findOne({ _id: chatId, isShared: true })
+                .select('_id title')
+                .lean();
+
+            if (!chat) {
+                return res.status(404).json({ message: 'Chat not found or not shared' });
+            }
+
+            const chatQueries = await ChatQuery.find({ chatId: chat._id })
+                .sort({ createdAt: 1 })
+                .select('_id chatId model prompt response createdAt updatedAt')
+                .lean();
+
+            const safeChat = {
+                _id: chat._id,
+                title: chat.title,
+                chatQueries: (chatQueries || []).map(q => ({
+                    _id: q._id,
+                    chatId: q.chatId,
+                    model: q.model,
+                    prompt: q.prompt,
+                    response: q.response,
+                    error: null,
+                    createdAt: q.createdAt,
+                    updatedAt: q.updatedAt
+                }))
+            };
+
+            return res.status(200).json(safeChat);
+        } catch (error) {
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    },
+    // --- AUTH: Toggle share ---
+    toggleShare: async (req, res) => {
+        try {
+            const user = req.user;
+            const { chatId } = req.params;
+            const { isShared } = req.body || {};
+
+            if (!mongoose.Types.ObjectId.isValid(chatId)) {
+                return res.status(400).json({ error: 'Invalid Chat Id' });
+            }
+
+            const chat = await Chat.findById(chatId);
+            if (!chat) return res.status(404).json({ error: 'Chat not found' });
+            if (chat.userId.toString() !== user._id.toString()) {
+                return res.status(401).json({ error: 'Unauthorised User' });
+            }
+
+            chat.isShared = !!isShared;
+            chat.updatedAt = Date.now();
+            await chat.save();
+
+            return res.status(200).json({ _id: chat._id, isShared: chat.isShared });
+        } catch (error) {
+            return res.status(500).json({ error: 'An internal server error occurred.' });
+        }
+    },
     // --- NON-STREAMING METHOD ---
     handleChatCombined: async (req, res) => {
         try {

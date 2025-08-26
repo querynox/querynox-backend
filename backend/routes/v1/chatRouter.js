@@ -13,6 +13,10 @@ router.post(['/', '/:chatId'],clerkAuthMiddleware(requestUser = true), upload.ar
 router.get('/models', chatController.getAvailableModels);
 router.get('/user',clerkAuthMiddleware(requestUser = true, upInsert = false), chatController.getUserChats);
 router.get('/:chatId',clerkAuthMiddleware(), chatController.getChatHistory);
+router.patch('/:chatId/share',clerkAuthMiddleware(requestUser = true), chatController.toggleShare);
+// Bookmark toggle on a chat
+const userController = require('../../controllers/userController');
+router.patch('/:chatId/bookmark',clerkAuthMiddleware(requestUser = true, upInsert = false), userController.toggleBookmark);
 
 router.delete('/:chatId',clerkAuthMiddleware(requestUser = true),chatController.deleteChat);
 
