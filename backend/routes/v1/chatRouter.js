@@ -3,7 +3,7 @@ const chatController = require('../../controllers/chatController');
 const router = express.Router();
 
 //Middleware
-const upload = require('../../services/multerService');
+const upload = require('../../configs/multerConfig');
 const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware')
 const userLimitMiddleware = require('../../middlewares/userLimitMiddleware')
 

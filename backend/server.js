@@ -1,6 +1,6 @@
 require('dotenv').config();
-require('./configs/morganFormatter')
-require("./services/databaseService")()
+require('./configs/morganFormatterConfig')
+require("./configs/databaseConfig")()
 
 const express = require('express');
 

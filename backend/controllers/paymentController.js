@@ -1,6 +1,6 @@
 const Product = require('../models/Product');
 const User = require('../models/User');
-const polar = require('../services/polarService');
+const polar = require('../configs/polarConfig');
 const { clerkClient } = require('@clerk/express');
 
 const paymentController = {

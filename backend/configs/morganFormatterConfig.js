@@ -1,4 +1,4 @@
-const morgan = require('morgan')
+const morgan = require('morgan');
 
 function colorStatus(status) {
     if (status >= 500) return `\x1b[31m${status}\x1b[0m`; // red
@@ -32,15 +32,29 @@ morgan.format("dev-with-time", function (tokens, req, res) {
   const method = tokens.method(req, res);
   const responseTime = parseFloat(tokens["response-time"](req, res)) || 0;
   const totalTime = parseFloat(tokens["total-time"](req, res)) || 0;
+  const contentLength = parseFloat(tokens.res(req, res, "content-length")) || 0;
+  const time = tokens.time(req, res);
+  const url = tokens.url(req, res);
 
-  return [
-    `\x1b[90m[${tokens.time(req, res)}]\x1b[0m`, // gray time
+  const output_string = [
+    `\x1b[90m[${time}]\x1b[0m`, // gray time
     colorMethod(method),                          // colored method
-    `\x1b[37m${tokens.url(req, res)}\x1b[0m`,    // white URL
+    `\x1b[37m${url}\x1b[0m`,    // white URL
     colorStatus(status),                          // colored status
     colorResponseTime(responseTime),             // colored response time
     colorResponseTime(totalTime),           // colored response time
     "-",
-    `\x1b[90m${tokens.res(req, res, "content-length") || "0"}\x1b[0m` // cyan length
+    `\x1b[90m${contentLength}\x1b[0m` // cyan length TODO: add units of length
   ].join(" ");
+
+  return JSON.stringify({
+    output_string,
+    time,
+    method,
+    status_code:status,
+    first_time_to_byte:responseTime,
+    last_time_to_byte:totalTime,
+    route:req.url,
+    content_length:contentLength
+  })
 });
