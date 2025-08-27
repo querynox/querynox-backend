@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors({
-  origin: [process.env.BACKEND_LOGGER_HOST,process.env.BACKEND_HOST_IP,process.env.BACKEND_HOST_IP],
+  origin: [process.env.BACKEND_LOGGER_HOST,process.env.BACKEND_HOST_IP,process.env.BACKEND_HOST],
   credentials: true // optional, only if you're using cookies or auth headers
 }));
 app.use((req,res,next)=>{
