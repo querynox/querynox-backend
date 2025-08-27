@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const polar = require('../configs/polarConfig');
 const { clerkClient } = require('@clerk/express');
+const logger = require('../configs/loggerConfig');
 
 const paymentController = {
 
@@ -46,7 +47,7 @@ const paymentController = {
             res.json({ url: checkout.url });
 
         } catch (err) {
-            console.error(err);
+            logger.error(err);
             res.status(500).json({ error: "Checkout creation failed" });
         }
     },
@@ -116,21 +117,21 @@ const paymentController = {
     webhook : {
 
         handleOrderPaid: async (req,res) => {  
-            console.log(req.event.type);
+            logger.debug(req.event.type);
             const data = req.event.data;
             await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id},{upsert:true});
             res.status(200).end();
         },
 
         handleProductUpdated: async (req,res) => {
-            console.log(req.event.type);
+            logger.debug(req.event.type);
             const _product = req.event.data;
             await Product.updateOne({_id:_product.id},{..._product},{upsert:true});
             res.status(200).end();
         },
 
         handleSubscriptionRevoked: async(req,res) => {
-            console.log(req.event.type);
+            logger.debug(req.event.type);
             const data = req.event.data;
             await User.updateOne({_id:data.metadata.externalCustomerId} , {productId:null}); //Used data.metadata.externalCustomerId because data.customer.externalId is always 'null'.
             res.status(200).end();
@@ -138,7 +139,7 @@ const paymentController = {
 
         handleDefault: async (req,res) => {
             const event = req.event;
-            console.log(event.type);
+            logger.debug(event.type);
             res.status(200).end();
         },
 

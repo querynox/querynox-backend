@@ -43,7 +43,6 @@ app.use(morgan("dev-with-time",{stream:{write:(dataString)=>{
   const data = JSON.parse(dataString);
 
   logger.log({level:"http",message:"REQUEST",...data});
-  logger.warn("REQUESTddd");
 
   //Prometheus Metrics
   reqResMetrics.labels({
@@ -88,11 +87,11 @@ app.use('*', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.log(err)
+  logger.error(err)
   res.status(500).json({ error: err.message || String(err) });
 });
 
 // Server start
 app.listen(PORT , () => {
-  console.log(`Server is running on port ${PORT}`);
+  logger.info(`Server is running on port ${PORT}`);
 }); 

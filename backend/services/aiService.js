@@ -4,6 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const Anthropic = require('@anthropic-ai/sdk');
 const imageService = require('./imageService');
 const models = require('../data/models');
+const logger = require('../configs/loggerConfig');
 
 // Initialize AI Clients
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -15,7 +16,7 @@ try {
         anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
     }
 } catch (error) {
-    console.error("Could not initialize Anthropic client:", error.message);
+    logger.error("Could not initialize Anthropic client:", error.message);
 }
 
 const aiService = {
@@ -44,7 +45,7 @@ const aiService = {
             const generatedName = groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, ''); // Remove quotes
             return generatedName || 'New Chat';
         } catch (error) {
-            console.error("Chatname generation failed:", error);
+            logger.error("Chatname generation failed:", error);
             return 'New Chat';
         }
     },
@@ -74,7 +75,7 @@ const aiService = {
             const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
             return generatedQuestion || messages.pop().content;
         } catch (error) {
-            console.error("Chatname generation failed:", error);
+            logger.error("Chatname generation failed:", error);
             return 'New Chat';
         }
     },
@@ -104,7 +105,7 @@ const aiService = {
             const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
             return generatedQuestion || messages.pop().content;
         } catch (error) {
-            console.error("Chatname generation failed:", error);
+            logger.error("Chatname generation failed:", error);
             return 'New Chat';
         }
     },
@@ -172,7 +173,7 @@ const aiService = {
                 }
             }
         } catch (error) {
-            console.error(`AI Service Error for model ${model}:`, error);
+            logger.error(`AI Service Error for model ${model}:`, error);
             throw error; // Re-throw the error to be caught by the controller
         }
     },
@@ -203,7 +204,7 @@ const aiService = {
             });
             return groqResponse.choices[0]?.message?.content?.trim() || '';
         } catch (error) {
-            console.error("Summary generation failed:", error);
+            logger.error("Summary generation failed:", error);
             return 'Previous context preserved.';
         }
     },

@@ -6,6 +6,7 @@ const aiService = require('../services/aiService');
 const models = require('../data/models');
 const { default: mongoose } = require('mongoose');
 const { MAX_MESSAGE_SIZE } = require('../data/configs');
+const logger = require('../configs/loggerConfig');
 
 const chatController = {
     // --- PUBLIC: Get shared chat (read-only) ---
@@ -176,7 +177,7 @@ const chatController = {
             res.status(200).json({chatQuery:chatQuery, chat:chat});
 
         } catch (error) {
-            console.error('Handle Chat Error:', error);
+            logger.error('Handle Chat Error:', error);
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -315,7 +316,7 @@ const chatController = {
                 sendEvent({ type: 'complete', chatQuery, chat });
 
             } catch (aiError) {
-                console.error('AI generation error:', aiError);
+                logger.error('AI generation error:', aiError);
                 sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
             }
 
@@ -428,13 +429,13 @@ const chatController = {
             await chat.deleteOne();
             await user.save()
 
-           await session.commitTransaction();
+            await session.commitTransaction();
 
             return res.status(200).json({ message: 'Chat deleted' });
 
         } catch (error) {
-           await session.abortTransaction();
-           console.log(error)
+            await session.abortTransaction();
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }finally{
            session.endSession();
