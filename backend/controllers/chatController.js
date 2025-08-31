@@ -346,16 +346,21 @@ const chatController = {
     getChatHistory: async (req, res) => {
         try {
             const { chatId } = req.params;
+            const { limit = 50, offset = 0 } = req.query; // Add limit and offset parameters
             const chat = await Chat.findById(chatId);
             if (!chat) {
-                return res.status(404).json({ error: 'Chat not found' });
+            return res.status(404).json({ error: 'Chat not found' });
             }
-            const chatQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-            res.status(200).json({...chat._doc, chatQueries});
+            const chatQueries = await ChatQuery.find({ chatId: chat._id })
+            .sort({ createdAt: 1 })
+            .skip(offset) // Add skip for pagination 
+            .limit(limit); // Add limit for pagination
+            res.status(200).json({ ...chat._doc, chatQueries });
         } catch (error) {
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
+
     
     // Will NOT work now because generateConversationSummary is changed!!!
     // switchModel: async (req, res) => {
