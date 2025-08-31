@@ -8,33 +8,34 @@ const userController = {
         try {
             const user = req.user;
             
-            try {
-            // 1. Fetch Polar customer by externalId
-                const customer = await polar.customers.getExternal({ externalId: req.userId});
+            // Use when need to manually update user payment status when server was not online
+            // try {
+            // // 1. Fetch Polar customer by externalId
+            //     const customer = await polar.customers.getExternal({ externalId: req.userId});
 
-                // 2. If customer exists and has subscriptions, find active product
-                if (customer && customer.subscriptions && customer.subscriptions.length > 0) {
-                    const activeSub = customer.subscriptions.find(s => s.status === "active");
-                    if (activeSub) {
-                        updatedProductId = activeSub.product.id;
+            //     // 2. If customer exists and has subscriptions, find active product
+            //     if (customer && customer.subscriptions && customer.subscriptions.length > 0) {
+            //         const activeSub = customer.subscriptions.find(s => s.status === "active");
+            //         if (activeSub) {
+            //             updatedProductId = activeSub.product.id;
 
-                        // 3. Update user in MongoDB if productId changed
-                        if (updatedProductId && updatedProductId !== productId) {
-                            await User.updateOne(
-                                { _id: user.id },
-                                { productId: updatedProductId }
-                            );
-                        }
+            //             // 3. Update user in MongoDB if productId changed
+            //             if (updatedProductId && updatedProductId !== productId) {
+            //                 await User.updateOne(
+            //                     { _id: user.id },
+            //                     { productId: updatedProductId }
+            //                 );
+            //             }
 
-                        userDTO.isPro = true;
-                    }
-                }
-            } catch (err) {// If customer not found.
-                await User.updateOne(
-                    { _id: user.id },
-                    { productId: null }
-                );
-            }
+            //             userDTO.isPro = true;
+            //         }
+            //     }
+            // } catch (err) {// If customer not found.
+            //     await User.updateOne(
+            //         { _id: user.id },
+            //         { productId: null }
+            //     );
+            // }
  
             const userDTO = {...user.toObject() , isPro:!!user.productId } 
 
