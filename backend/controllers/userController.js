@@ -1,14 +1,45 @@
 const Product = require('../models/Product');
 const Chat = require('../models/Chat');
+const polar = require('../configs/polarConfig');
+const User = require('../models/User')
 
 const userController = {
     getUserInfo: async (req, res) => {
         try {
-            const { productId, ...user } = req.user.toObject ? req.user.toObject() : req.user;
-            const userDTO = {...user, isPro:!!productId } 
+            const user = req.user;
+            
+            try {
+            // 1. Fetch Polar customer by externalId
+                const customer = await polar.customers.getExternal({ externalId: req.userId});
+
+                // 2. If customer exists and has subscriptions, find active product
+                if (customer && customer.subscriptions && customer.subscriptions.length > 0) {
+                    const activeSub = customer.subscriptions.find(s => s.status === "active");
+                    if (activeSub) {
+                        updatedProductId = activeSub.product.id;
+
+                        // 3. Update user in MongoDB if productId changed
+                        if (updatedProductId && updatedProductId !== productId) {
+                            await User.updateOne(
+                                { _id: user.id },
+                                { productId: updatedProductId }
+                            );
+                        }
+
+                        userDTO.isPro = true;
+                    }
+                }
+            } catch (err) {// If customer not found.
+                await User.updateOne(
+                    { _id: user.id },
+                    { productId: null }
+                );
+            }
  
-            if (productId){
-                userDTO.product = await Product.findById(productId)
+            const userDTO = {...user.toObject() , isPro:!!user.productId } 
+
+            if (user.productId){
+                userDTO.product = await Product.findById(user.productId)
             }
 
             return res.status(200).json({user:userDTO});

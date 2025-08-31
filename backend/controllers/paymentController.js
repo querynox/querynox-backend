@@ -36,7 +36,7 @@ const paymentController = {
                 customerId:customer.id,
                 customerEmail:customer.email,
                 customerName:customer.name,
-                externalCustomerId:customer.externalId,
+                externalCustomerId:userId,
                 customerBillingAddress:{country:"IN"},
                 metadata:{
                     ...metadata,
@@ -77,7 +77,6 @@ const paymentController = {
             res.status(500).json({ error: error.message});
         }
     },
-
     validateCheckout: async (req, res) => {
         try{
             const { checkoutId } = req.params;
@@ -111,6 +110,7 @@ const paymentController = {
             if (err.response?.status === 404) {
                 return res.status(404).json({"status":"notfound"});
             }
+            return res.status(400).json({"status":"invalid"});
         }  
     },
 
