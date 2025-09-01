@@ -38,7 +38,7 @@ const aiService = {
                     { role: "system", content: "Generate a concise, descriptive chat name (3-5 words max). Return only the chat name." },
                     { role: "user", content: firstQuery }
                 ],
-                model: "llama3-70b-8192",
+                model: "llama-3.1-8b-instant",
                 max_tokens: 20,
                 temperature: 0.7
             });
@@ -68,7 +68,7 @@ const aiService = {
                     },
                     ...recentMessages
                 ],
-                model: "llama3-70b-8192",
+                model: "llama-3.1-8b-instant",
                 max_tokens: 30,
                 temperature: 0.2
             });
@@ -98,7 +98,7 @@ const aiService = {
                     },
                     ...recentMessages
                 ],
-                model: "llama3-70b-8192",
+                model: "llama-3.1-8b-instant",
                 max_tokens: 30,
                 temperature: 0.1
             });
@@ -141,7 +141,7 @@ const aiService = {
                         yield event.delta.text;
                     }
                 }
-            } else if (model === "llama3-70b-8192") {
+            } else if (model === "llama-3.3-70b-versatile") {
                  const stream = await groq.chat.completions.create({
                     messages: [{ role: 'system', content: finalSystemPrompt }, ...messages],
                     model: selectedModel.fullName,
@@ -199,7 +199,7 @@ const aiService = {
             const summaryPrompt = `Concisely summarize the key points of this conversation:\n\n${_messages}`;
             const groqResponse = await groq.chat.completions.create({
                 messages: [{ role: "user", content: summaryPrompt }],
-                model: "llama3-70b-8192",
+                model: "llama-3.1-8b-instant",
                 max_tokens: 500,
             });
             return groqResponse.choices[0]?.message?.content?.trim() || '';
