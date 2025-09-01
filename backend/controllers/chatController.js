@@ -28,7 +28,7 @@ const chatController = {
 
             const chatQueries = await ChatQuery.find({ chatId: chat._id })
                 .sort({ createdAt: 1 })
-                .select('_id chatId model prompt response createdAt updatedAt')
+                .select('_id chatId model prompt response createdAt updatedAt meta')
                 .lean();
 
             const safeChat = {
@@ -42,7 +42,8 @@ const chatController = {
                     response: q.response,
                     error: null,
                     createdAt: q.createdAt,
-                    updatedAt: q.updatedAt
+                    updatedAt: q.updatedAt,
+                    meta:q.meta
                 }))
             };
 
@@ -146,7 +147,7 @@ const chatController = {
             }
 
 
-            const assistantResponse = await aiService.generateResponse(model, messages, systemPrompt);
+            const {content, ...rest} = await aiService.generateResponse(model, messages, systemPrompt);
             if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                 user.usedImageGeneration++;
             }else{
@@ -165,7 +166,8 @@ const chatController = {
                 model: model,
                 systemPrompt: systemPrompt,
                 webSearch: webSearch == "true" || webSearch == true,
-                response: assistantResponse
+                response: content,
+                meta:rest
             });
             await chatQuery.save();
 
@@ -232,7 +234,7 @@ const chatController = {
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
             const conversationHistory = previousQueries.map(q => {
-                if(models.find(m => m.name == q.model)?.category == "Image Generation"){
+                if(models.find(m => m.name == q.model || m.fullName == q.model)?.category == "Image Generation"){
                     return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: "The Image was Generated" }]
                 }
                 return [{ role: 'user', content: q.prompt },{ role: 'assistant', content: q.response }]
@@ -278,11 +280,13 @@ const chatController = {
 
             sendEvent({ type: 'status', message: 'Generating AI response...' });
 
-            let fullResponse = '';
+            let fullResponse = {content:""};
             try {
                 for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
-                    fullResponse += chunk;
-                    sendEvent({ type: 'content', content: chunk });
+                    const {content, ...rest} = chunk;
+                    fullResponse = {...rest,content:fullResponse.content + chunk.content}
+                    sendEvent({ type: 'content', content: chunk.content });
+
                 }
                 if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                     user.usedImageGeneration++;
@@ -297,17 +301,17 @@ const chatController = {
                 chat.webSearch = webSearch;
                 chat = await chat.save();
 
-
+                const {content,...rest} = fullResponse
                 const chatQuery = new ChatQuery({
                     chatId: chat._id,
                     prompt: prompt,
                     model: model,
                     systemPrompt: systemPrompt,
                     webSearch: webSearch == "true" || webSearch == true,
-                    response: fullResponse
+                    response: content,
+                    meta:rest
                 });
                 await chatQuery.save();
-
                 if(!chatId){// Create new Chat
                     user.chats.push(chat._id);
                 }
@@ -361,44 +365,6 @@ const chatController = {
         }
     },
 
-    
-    // Will NOT work now because generateConversationSummary is changed!!!
-    // switchModel: async (req, res) => {
-    //     try {
-    //         const { chatId, newModel, systemPrompt } = req.body;
-    //         const chat = await Chat.findById(chatId);
-    //         if (!chat) {
-    //             return res.status(404).json({ error: 'Chat not found' });
-    //         }
-    //         const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
-    //         const lastQuery = previousQueries[previousQueries.length - 1];
-    //         const oldModel = lastQuery ? lastQuery.model : 'no previous model';
-    //         if (lastQuery && lastQuery.model === newModel) {
-    //             return res.status(200).json({ message: 'Model is already set to ' + newModel, chat: chat });
-    //         }
-    //         let conversationSummary = 'Previous conversation context preserved.';
-    //         if (previousQueries.length > 0) {
-    //             try {
-    //                 conversationSummary = await aiService.generateConversationSummary(previousQueries);
-    //             } catch (summaryError) {
-    //                 console.error('Summary generation error on model switch:', summaryError);
-    //             }
-    //         }
-    //         const switchChatQuery = new ChatQuery({
-    //             chatId: chat._id, prompt: `(System: Model switched from ${oldModel} to ${newModel})`,
-    //             model: newModel, systemPrompt: systemPrompt,
-    //             webSearch: false, response: conversationSummary
-    //         });
-    //         await switchChatQuery.save();
-    //         chat.updatedAt = Date.now();
-    //         await chat.save();
-    //         res.status(200).json({ message: `Successfully switched from ${oldModel} to ${newModel}`, chat: chat });
-    //     } catch (error) {
-    //         console.error('Switch Model Error:', error);
-    //         res.status(500).json({ error: 'An internal server error occurred.' });
-    //     }
-    // },
-
     getAvailableModels: async (req, res) => {
         try {
             res.status(200).json(models);
@@ -428,7 +394,7 @@ const chatController = {
                 return res.status(401).json({ error: 'Unauthorised User' });
             }
 
-            user.chats = user.chats.filter(chat => chat.id !== chatId);
+            user.chats = user.chats.filter(c => c.toString() !== chatId.toString());
 
             await ChatQuery.deleteMany({chatId:chatId});
             await chat.deleteOne();

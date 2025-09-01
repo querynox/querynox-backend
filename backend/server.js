@@ -10,6 +10,7 @@ const listEndpoints = require('express-list-endpoints');
 const morgan = require('morgan')
 const compresison = require('compression')
 const promClient = require('prom-client');
+const path = require("path");
 
 const { reqResMetrics, totalRequestCounter } = require('./configs/prometheusMetricsConfig');
 const logger = require("./configs/loggerConfig")
@@ -18,9 +19,10 @@ const v1Router = require('./routes/v1/router')
 
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Middlewares
+app.use("/public",express.static(path.join(__dirname, "public"))); //Serving Images_generated (Mocking S3) //TODO: Remove in Prod
 app.use(cors({
   origin: [process.env.LOKI_LOGGER_HOST,process.env.LOKI_LOGGER_HOST_IP,process.env.FRONTEND_HOST_IP,process.env.FRONTEND_HOST],
   credentials: true // optional, only if you're using cookies or auth headers

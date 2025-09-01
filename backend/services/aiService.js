@@ -22,9 +22,9 @@ try {
 const aiService = {
     // This helper function is no longer needed with modern message array formats
     // but kept in case you have other uses for it.
-    trimPromptForModel(prompt, model) {
+    trimPromptForModel(prompt, _model) {
         if (typeof prompt !== 'string') return '';
-        const limit = models.find(model => model.name == model)?.limit || 8000;
+        const limit = models.find(m => m.name == model)?.limit || 8000;
         return prompt.length > limit ? prompt.substring(0, limit) : prompt;
     },
 
@@ -75,7 +75,7 @@ const aiService = {
             const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
             return generatedQuestion || messages.pop().content;
         } catch (error) {
-            logger.error("Chatname generation failed:", error);
+            logger.error("Web search context generation failed:", error);
             return 'New Chat';
         }
     },
@@ -102,25 +102,26 @@ const aiService = {
                 max_tokens: 30,
                 temperature: 0.1
             });
-            const generatedQuestion= groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
-            return generatedQuestion || messages.pop().content;
+            const generatedQuestion = groqResponse.choices[0]?.message?.content?.trim().replace(/["']/g, '');
+            return generatedQuestion || messages[messages.length - 1]?.content || '';
         } catch (error) {
-            logger.error("Chatname generation failed:", error);
+            logger.error("Image prompt context generation failed:", error);
             return 'New Chat';
         }
     },
     
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
-    async* generateStreamingResponse(model, messages, systemPrompt) {
+    async* generateStreamingResponse(model, messages, systemPrompt,) {
         try {
 
             const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
+
             // Handle image generation separately
             if(selectedModel.category === "Image Generation"){
                 const prompt = await this.generateContextForImageGeneration(messages);
                 const imageResult = await imageService.generateImage(prompt);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
-                yield imageResult.base64Image;
+                yield {...imageResult, content:imageResult.previewUrl};
                 return;
             }
 
@@ -138,7 +139,7 @@ const aiService = {
                 });
                 for await (const event of stream) {
                     if (event.type === 'content_block_delta') {
-                        yield event.delta.text;
+                        yield {content:event.delta.text};
                     }
                 }
             } else if (model === "llama-3.3-70b-versatile") {
@@ -149,7 +150,7 @@ const aiService = {
                     stream: true,
                 });
                 for await (const chunk of stream) {
-                    yield chunk.choices[0]?.delta?.content || '';
+                    yield {content:chunk.choices[0]?.delta?.content || ''};
                 }
             } else if (model === "gemini-1.5-flash") {
                 const geminiModel = genAI.getGenerativeModel({ model: selectedModel.fullName, systemInstruction: finalSystemPrompt });
@@ -159,7 +160,7 @@ const aiService = {
                 }));
                 const result = await geminiModel.generateContentStream({ contents });
                 for await (const chunk of result.stream) {
-                    yield chunk.text();
+                    yield {content:chunk.text()};
                 }
             } else { // Default to GPT
                 const stream = await openai.chat.completions.create({
@@ -169,7 +170,7 @@ const aiService = {
                     stream: true,
                 });
                 for await (const chunk of stream) {
-                    yield chunk.choices[0]?.delta?.content || '';
+                    yield {content:chunk.choices[0]?.delta?.content || ''};
                 }
             }
         } catch (error) {
@@ -181,9 +182,10 @@ const aiService = {
     // Legacy non-streaming method now just wraps the streaming one
     async generateResponse(model, messages, systemPrompt) {
         try {
-            let fullResponse = '';
+            let fullResponse = {content:""};
             for await (const chunk of this.generateStreamingResponse(model, messages, systemPrompt)) {
-                fullResponse += chunk;
+                const {content, ...rest} = chunk;
+                fullResponse = {...rest,content:fullResponse.content + chunk.content}
             }
             return fullResponse;
         } catch (error) {

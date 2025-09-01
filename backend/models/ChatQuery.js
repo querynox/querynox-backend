@@ -8,7 +8,8 @@ const chatQuerySchema = new mongoose.Schema({
   webSearch: { type: Boolean, default: false },
   response: { type: String, required: true },
   createdAt: { type: Number, default: Date.now },
-  updatedAt: { type: Number, default: Date.now }
+  updatedAt: { type: Number, default: Date.now },
+  meta: { type: Map, of: String } 
 });
 
 chatQuerySchema.index({ chatId: 1, createdAt: -1 }); 
