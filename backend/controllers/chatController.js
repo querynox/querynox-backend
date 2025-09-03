@@ -50,6 +50,7 @@ const chatController = {
 
             return res.status(200).json(safeChat);
         } catch (error) {
+            logger.error(error)
             return res.status(500).json({ message: 'Internal server error' });
         }
     },
@@ -76,6 +77,7 @@ const chatController = {
 
             return res.status(200).json({ _id: chat._id, isShared: chat.isShared });
         } catch (error) {
+            logger.error(error)
             return res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -328,7 +330,7 @@ const chatController = {
             res.status(200).end();
 
         } catch (error) {
-            console.error('Streaming handleChat error:', error);
+            logger.error('Streaming handleChat error:', error);
             if (!res.headersSent) {
                 res.status(500).json({ error: 'An internal server error occurred.' });
             } else {
@@ -344,6 +346,7 @@ const chatController = {
             res.status(200).json(chats);
 
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -362,6 +365,7 @@ const chatController = {
             .limit(limit); // Add limit for pagination
             res.status(200).json({ ...chat._doc, chatQueries });
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -370,6 +374,7 @@ const chatController = {
         try {
             res.status(200).json(models);
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },

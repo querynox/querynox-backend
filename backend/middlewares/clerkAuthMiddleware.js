@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 const { getAuth } = require('@clerk/express');
 const User = require('../models/User')
 
@@ -19,6 +17,8 @@ const clerkAuthMiddleware = (requestUser = false, upInsert = true) => {
 
       if(!_user && upInsert){
         _user = new User({ _id: userId});
+      }else if(!_user){
+        return res.status(404).json({ error: 'User Not Found' });
       }
       req.user = _user;        
     }
