@@ -111,7 +111,7 @@ const aiService = {
     },
     
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
-    async* generateStreamingResponse(model, messages, systemPrompt,) {
+    async* generateStreamingResponse(model, messages, systemPrompt, user) {
         try {
 
             const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
@@ -119,7 +119,7 @@ const aiService = {
             // Handle image generation separately
             if(selectedModel.category === "Image Generation"){
                 const prompt = await this.generateContextForImageGeneration(messages);
-                const imageResult = await imageService.generateImage(prompt);
+                const imageResult = await imageService.generateImage(prompt, user._id);
                 if (!imageResult.success) throw new Error(`Image generation failed: ${imageResult.error}`);
                 yield {...imageResult, content:imageResult.previewUrl};
                 return;
@@ -180,10 +180,10 @@ const aiService = {
     },
 
     // Legacy non-streaming method now just wraps the streaming one
-    async generateResponse(model, messages, systemPrompt) {
+    async generateResponse(model, messages, systemPrompt, user) {
         try {
             let fullResponse = {content:""};
-            for await (const chunk of this.generateStreamingResponse(model, messages, systemPrompt)) {
+            for await (const chunk of this.generateStreamingResponse(model, messages, systemPrompt, user)) {
                 const {content, ...rest} = chunk;
                 fullResponse = {...rest,content:fullResponse.content + chunk.content}
             }

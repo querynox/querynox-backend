@@ -7,6 +7,7 @@ const models = require('../data/models');
 const { default: mongoose } = require('mongoose');
 const { MAX_MESSAGE_SIZE } = require('../data/configs');
 const logger = require('../configs/loggerConfig');
+const axios = require('axios');
 
 const chatController = {
     // --- PUBLIC: Get shared chat (read-only) ---
@@ -147,7 +148,7 @@ const chatController = {
             }
 
 
-            const {content, ...rest} = await aiService.generateResponse(model, messages, systemPrompt);
+            const {content, ...rest} = await aiService.generateResponse(model, messages, systemPrompt, user);
             if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                 user.usedImageGeneration++;
             }else{
@@ -282,7 +283,7 @@ const chatController = {
 
             let fullResponse = {content:""};
             try {
-                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
+                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt,user)) {
                     const {content, ...rest} = chunk;
                     fullResponse = {...rest,content:fullResponse.content + chunk.content}
                     sendEvent({ type: 'content', content: chunk.content });
@@ -411,6 +412,28 @@ const chatController = {
         }finally{
            session.endSession();
         }
+    },
+
+    downloadImage: async(req,res) => {
+        try{
+            const fileUrl = `${process.env.PUBLIC_BUCKET_URL}/generation/${req.params.key}`;
+            const response = await axios.get(fileUrl, { responseType: "stream" });
+
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="image.png"`
+            );
+            res.setHeader(
+                "Content-Type",
+                response.headers["content-type"] || "application/octet-stream"
+            );
+
+            response.data.pipe(res);
+        }catch(e){
+            logger.error(e.message);
+            res.status(500).send("Error fetching file");
+        }
+
     }
 };
 
