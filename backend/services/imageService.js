@@ -20,8 +20,8 @@ const imageService = {
             });
 
             const image_bytes = Buffer.from(response.data[0].b64_json, "base64");
-            const id = `${userId}-${Date.now()}-${crypto.randomUUID()}.png`
-            const key = `generation/${id}`;
+            const id = `${Date.now()}-${crypto.randomUUID()}.png`
+            const key = `generation/${userId}/${id}`;
 
             // upload to R2
             await r2client.send(
@@ -37,7 +37,7 @@ const imageService = {
             const previewUrl = `${process.env.PUBLIC_BUCKET_URL}/${key}`;
 
             // Public download URL with content-disposition
-            const downloadUrl = `${process.env.BACKEND_HOST}/api/v1/public/images/download/${id}`;
+            const downloadUrl = `${process.env.BACKEND_HOST}/api/v1/public/images/download/${encodeURIComponent(key)}`;
 
             return {
                 success: true,

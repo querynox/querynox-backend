@@ -421,7 +421,7 @@ const chatController = {
 
     downloadImage: async(req,res) => {
         try{
-            const fileUrl = `${process.env.PUBLIC_BUCKET_URL}/generation/${req.params.key}`;
+            const fileUrl = `${process.env.PUBLIC_BUCKET_URL}/${decodeURIComponent(req.params.key)}`;
             const response = await axios.get(fileUrl, { responseType: "stream" });
 
             res.setHeader(
