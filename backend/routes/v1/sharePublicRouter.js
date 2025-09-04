@@ -54,6 +54,7 @@ function withCache(handler) {
 
 // GET /api/v1/public/chat/:chatId
 router.get('/chat/:chatId', rateLimit, withCache(chatController.getPublicSharedChat));
+router.get('/images/download/:key',chatController.downloadImage );
 
 module.exports = router;
 

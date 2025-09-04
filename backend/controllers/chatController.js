@@ -7,6 +7,7 @@ const models = require('../data/models');
 const { default: mongoose } = require('mongoose');
 const { MAX_MESSAGE_SIZE } = require('../data/configs');
 const logger = require('../configs/loggerConfig');
+const axios = require('axios');
 
 const chatController = {
     // --- PUBLIC: Get shared chat (read-only) ---
@@ -49,6 +50,7 @@ const chatController = {
 
             return res.status(200).json(safeChat);
         } catch (error) {
+            logger.error(error)
             return res.status(500).json({ message: 'Internal server error' });
         }
     },
@@ -75,6 +77,7 @@ const chatController = {
 
             return res.status(200).json({ _id: chat._id, isShared: chat.isShared });
         } catch (error) {
+            logger.error(error)
             return res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -147,7 +150,7 @@ const chatController = {
             }
 
 
-            const {content, ...rest} = await aiService.generateResponse(model, messages, systemPrompt);
+            const {content, ...rest} = await aiService.generateResponse(model, messages, systemPrompt, user);
             if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                 user.usedImageGeneration++;
             }else{
@@ -282,7 +285,7 @@ const chatController = {
 
             let fullResponse = {content:""};
             try {
-                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt)) {
+                for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt,user)) {
                     const {content, ...rest} = chunk;
                     fullResponse = {...rest,content:fullResponse.content + chunk.content}
                     sendEvent({ type: 'content', content: chunk.content });
@@ -327,7 +330,7 @@ const chatController = {
             res.status(200).end();
 
         } catch (error) {
-            console.error('Streaming handleChat error:', error);
+            logger.error('Streaming handleChat error:', error);
             if (!res.headersSent) {
                 res.status(500).json({ error: 'An internal server error occurred.' });
             } else {
@@ -343,6 +346,7 @@ const chatController = {
             res.status(200).json(chats);
 
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -361,6 +365,7 @@ const chatController = {
             .limit(limit); // Add limit for pagination
             res.status(200).json({ ...chat._doc, chatQueries });
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -369,6 +374,7 @@ const chatController = {
         try {
             res.status(200).json(models);
         } catch (error) {
+            logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
         }
     },
@@ -411,6 +417,28 @@ const chatController = {
         }finally{
            session.endSession();
         }
+    },
+
+    downloadImage: async(req,res) => {
+        try{
+            const fileUrl = `${process.env.PUBLIC_BUCKET_URL}/${decodeURIComponent(req.params.key)}`;
+            const response = await axios.get(fileUrl, { responseType: "stream" });
+
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="image.png"`
+            );
+            res.setHeader(
+                "Content-Type",
+                response.headers["content-type"] || "application/octet-stream"
+            );
+
+            response.data.pipe(res);
+        }catch(e){
+            logger.error(e.message);
+            res.status(500).send("Error fetching file");
+        }
+
     }
 };
 
