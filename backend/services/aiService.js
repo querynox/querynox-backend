@@ -6,10 +6,31 @@ const imageService = require('./imageService');
 const models = require('../data/models');
 const logger = require('../configs/loggerConfig');
 
+// OpenRouter models list
+const OPENROUTER_MODELS = ['gpt-oss-120b', 'grok-3-mini'];
+
 // Initialize AI Clients
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Initialize OpenRouter client
+let openRouterClient;
+try {
+    if (process.env.OPENROUTER_API_KEY) {
+        openRouterClient = new OpenAI({
+            apiKey: process.env.OPENROUTER_API_KEY,
+            baseURL: 'https://openrouter.ai/api/v1',
+            defaultHeaders: {
+                'HTTP-Referer': process.env.BACKEND_HOST || 'http://localhost:8080',
+                'X-Title': 'QueryNox Backend'
+            }
+        });
+    }
+} catch (error) {
+    logger.error("Could not initialize OpenRouter client:", error.message);
+}
+
 let anthropic;
 try {
     if (process.env.CLAUDE_API_KEY) {
@@ -20,6 +41,11 @@ try {
 }
 
 const aiService = {
+    // Helper function to check if a model should use OpenRouter
+    isOpenRouterModel(modelName) {
+        return OPENROUTER_MODELS.includes(modelName);
+    },
+
     // This helper function is no longer needed with modern message array formats
     // but kept in case you have other uses for it.
     trimPromptForModel(prompt, _model) {
@@ -128,7 +154,19 @@ const aiService = {
             // For text models
             const finalSystemPrompt = systemPrompt || 'You are a helpful assistant.';
 
-            if (model === "Claude 3.5 Sonnet") {
+            // Check if this is an OpenRouter model
+            if (this.isOpenRouterModel(model)) {
+                if (!openRouterClient) throw new Error('OpenRouter API key not configured.');
+                const stream = await openRouterClient.chat.completions.create({
+                    model: selectedModel.fullName,
+                    messages: [{ role: 'system', content: finalSystemPrompt }, ...messages],
+                    max_tokens: 4096,
+                    stream: true,
+                });
+                for await (const chunk of stream) {
+                    yield {content: chunk.choices[0]?.delta?.content || ''};
+                }
+            } else if (model === "Claude 3.5 Sonnet") {
                 if (!anthropic) throw new Error('Claude API key not configured.');
                 const stream = await anthropic.messages.create({
                     model: selectedModel.fullName,
