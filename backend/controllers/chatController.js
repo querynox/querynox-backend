@@ -8,6 +8,8 @@ const { default: mongoose } = require('mongoose');
 const { MAX_MESSAGE_SIZE } = require('../data/configs');
 const logger = require('../configs/loggerConfig');
 const axios = require('axios');
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const r2client = require('../configs/R2Client');
 
 const chatController = {
     // --- PUBLIC: Get shared chat (read-only) ---
@@ -381,8 +383,6 @@ const chatController = {
     },
 
     deleteChat: async (req,res) => {
-        const session = await mongoose.startSession();
-        session.startTransaction(); 
 
         try {
             const user = req.user;
@@ -392,7 +392,7 @@ const chatController = {
                 return res.status(400).json({ error: 'Missing valid Parameters' }); 
             }
 
-            const chat = await Chat.findById(chatId);
+            const chat = await Chat.findById(chatId)
             if (!chat) {
                 return res.status(404).json({ error: 'Chat not found' });
             }
@@ -403,20 +403,29 @@ const chatController = {
 
             user.chats = user.chats.filter(c => c.toString() !== chatId.toString());
 
+            const chatQueries = await ChatQuery.find({chatId:chatId},{meta:true})
+            const deleteCommands = chatQueries
+                .filter(cq => cq.meta.get('key'))
+                .map(cq =>{
+                    const key = cq.meta.get('key');
+                    console.log("Deleting:", key);
+                    return r2client.send(new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET,
+                        Key: key,
+                    }))
+                }); 
+
+            await Promise.all(deleteCommands);
+
             await ChatQuery.deleteMany({chatId:chatId});
             await chat.deleteOne();
             await user.save()
 
-            await session.commitTransaction();
-
             return res.status(200).json({ message: 'Chat deleted' });
 
         } catch (error) {
-            await session.abortTransaction();
             logger.error(error)
             res.status(500).json({ error: 'An internal server error occurred.' });
-        }finally{
-           session.endSession();
         }
     },
 

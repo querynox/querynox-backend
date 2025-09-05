@@ -42,6 +42,7 @@ const imageService = {
             return {
                 success: true,
                 filename: id,
+                key:key,
                 previewUrl: previewUrl,
                 downloadUrl: downloadUrl
             };

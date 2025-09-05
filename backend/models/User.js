@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   chats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat', default:[] }],
   bookmarkedChats: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat', default:[] }],
   createdAt: { type: Number, default: Date.now },
+  updatedAt: { type: Number, default: Date.now },
   productId: { type: String, ref: 'Product', default:null },
   usedChatGeneration: { type: Number, default:0},
   usedImageGeneration: { type: Number, default:0 },
