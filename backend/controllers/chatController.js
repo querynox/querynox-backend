@@ -436,7 +436,11 @@ const chatController = {
             response.data.pipe(res);
         }catch(e){
             logger.error(e.message);
-            res.status(500).send("Error fetching file");
+            if(e.status == 404){
+                res.status(404).send("File Not Found");
+            }else{
+                res.status(500).send("Error fetching file");
+            }
         }
 
     }

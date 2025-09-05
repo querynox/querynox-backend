@@ -116,7 +116,7 @@ const paymentController = {
 
     webhook : {
 
-        handleOrderPaid: async (req,res) => {  
+        handleSubscriptionActive: async (req,res) => {  
             logger.debug(req.event.type);
             const data = req.event.data;
             await User.updateOne({_id:data.customer.externalId} , {productId:data.product.id},{upsert:true});
