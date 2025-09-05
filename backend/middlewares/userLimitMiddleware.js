@@ -5,6 +5,7 @@ const models = require("../data/models.js");
 const userLimitMiddleware = () => {
   return async (req, res, next) => {
     const user = req.user;
+    const { chatId } = req.params;
     const { model, webSearch } = req.body;
     const isImageModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name).category == "Image Generation";
 
@@ -59,7 +60,7 @@ const userLimitMiddleware = () => {
         }
 
         if(error.trim()){
-            return res.status(429).json({ error: error });
+            return res.status(429).json({ error: error, chatid: chatId ?? ""});
         }
 
     }else{
@@ -87,7 +88,7 @@ const userLimitMiddleware = () => {
         }
 
         if(error.trim()){
-            return res.status(429).json({ error: error });
+            return res.status(429).json({ error: error, chatid: chatId ?? ""});
         }
     }
 

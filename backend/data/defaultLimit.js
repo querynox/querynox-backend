@@ -1,5 +1,5 @@
 const DEFAULT_LIMITS = {
-    chatGenerationLimit: 5,
+    chatGenerationLimit: 10,
     imageGenerationLimit: 2,
     webSearchLimit: 2,
     fileRagLimit: 1,
