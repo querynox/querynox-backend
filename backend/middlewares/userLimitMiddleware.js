@@ -1,9 +1,12 @@
 const Product = require("../models/Product.js");
 const DEFAULT_LIMITS = require("../data/defaultLimit.js");
+const models = require("../data/models.js");
 
 const userLimitMiddleware = () => {
   return async (req, res, next) => {
     const user = req.user;
+    const { model, webSearch } = req.body;
+    const isImageModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name).category == "Image Generation";
 
     const now = new Date();
     const lastUpdated = new Date(user.limitsUpdatedAt);
@@ -39,15 +42,15 @@ const userLimitMiddleware = () => {
             error += `Chat generation limit exceeded. Allowed usage is ${product.metadata.chatGenerationLimit} queries.\n`
         }
 
-        if (user.usedFileRag >= product.metadata.fileRagLimit) {
+        if (req.files && user.usedFileRag >= product.metadata.fileRagLimit) {
             error += `File RAG limit exceeded. Allowed usage is ${product.metadata.fileRagLimit} queries.\n`
         }
 
-        if (user.usedImageGeneration >= product.metadata.imageGenerationLimit) {
+        if (isImageModel && user.usedImageGeneration >= product.metadata.imageGenerationLimit) {
             error += `Image generation limit exceeded. Allowed usage is ${product.metadata.imageGenerationLimit} images.\n`
         }
 
-        if (user.usedWebSearch >= product.metadata.webSearchLimit) {
+        if ((webSearch =="true" || webSearch==true) && user.usedWebSearch >= product.metadata.webSearchLimit) {
             error += `Web search limit exceeded. Allowed usage is ${product.metadata.webSearchLimit} searches.\n`
         }
 
@@ -67,15 +70,15 @@ const userLimitMiddleware = () => {
             error += `Chat generation limit exceeded. Allowed usage is ${DEFAULT_LIMITS.chatGenerationLimit} queries (free tier).\n`;
         }
 
-        if (user.usedFileRag >= DEFAULT_LIMITS.fileRagLimit) {
+        if (req.files && user.usedFileRag >= DEFAULT_LIMITS.fileRagLimit) {
             error += `File RAG limit exceeded. Allowed usage is ${DEFAULT_LIMITS.fileRagLimit} queries (free tier).\n`;
         }
 
-        if (user.usedImageGeneration >= DEFAULT_LIMITS.imageGenerationLimit) {
+        if (isImageModel && user.usedImageGeneration >= DEFAULT_LIMITS.imageGenerationLimit) {
             error += `Image generation limit exceeded. Allowed usage is ${DEFAULT_LIMITS.imageGenerationLimit} images (free tier).\n`;
         }
 
-        if (user.usedWebSearch >= DEFAULT_LIMITS.webSearchLimit) {
+        if ((webSearch =="true" || webSearch==true) && user.usedWebSearch >= DEFAULT_LIMITS.webSearchLimit) {
             error += `Web search limit exceeded. Allowed usage is ${DEFAULT_LIMITS.webSearchLimit} searches (free tier).\n`;
         }
 

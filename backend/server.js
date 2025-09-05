@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 8080;
 
 // Middlewares
 app.use(cors({
-  origin: [process.env.LOKI_LOGGER_HOST,process.env.FRONTEND_HOST],
+  origin: [process.env.LOKI_LOGGER_HOST,process.env.FRONTEND_HOST,"http://localhost:4173","https://querynox-dev.vercel.app"],
   credentials: true // optional, only if you're using cookies or auth headers
 }));
 app.use((req,res,next)=>{
@@ -35,7 +35,13 @@ app.use((req,res,next)=>{
 });
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(clerkMiddleware({ secretKey: process.env.CLERK_SECRET_KEY }))
-app.use(compresison())
+app.use((req,res,next)=>{
+  if(req.path.endsWith('stream')){
+    next();
+  }else{
+    compresison()(req,res,next)
+  }
+})
 
 promClient.collectDefaultMetrics({register:promClient.register})
 

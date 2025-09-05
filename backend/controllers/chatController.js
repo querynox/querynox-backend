@@ -204,10 +204,12 @@ const chatController = {
                 'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*',
             });
 
-            const sendEvent = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+            const sendEvent = (data) => {
+                res.write(`data: ${JSON.stringify(data)}\n\n`)
+                if (res.flush) res.flush()
+            };
 
             sendEvent({ type: 'status', message: 'Loading chat...' });
-
             if(chatId){
                 // Truthy value of 'chatId' could be used to determine if chat already exist. 
 
@@ -229,7 +231,6 @@ const chatController = {
                 const chatName = await aiService.generateChatname(prompt);
                 chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName ,  model, systemPrompt, webSearch });
             }
-
 
             sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
             
@@ -289,7 +290,6 @@ const chatController = {
                     const {content, ...rest} = chunk;
                     fullResponse = {...rest,content:fullResponse.content + chunk.content}
                     sendEvent({ type: 'content', content: chunk.content });
-
                 }
                 if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                     user.usedImageGeneration++;
@@ -319,7 +319,6 @@ const chatController = {
                     user.chats.push(chat._id);
                 }
                 await user.save();
-
                 sendEvent({ type: 'complete', chatQuery, chat });
 
             } catch (aiError) {
@@ -327,7 +326,7 @@ const chatController = {
                 sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` });
             }
 
-            res.status(200).end();
+            res.end();
 
         } catch (error) {
             logger.error('Streaming handleChat error:', error);
