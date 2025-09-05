@@ -25,7 +25,7 @@ const userLimitMiddleware = () => {
         user.usedImageGeneration = 0;
         user.usedWebSearch = 0;
         user.limitsUpdatedAt = Date.now();
- 
+        user.updatedAt = Date.now();
         await user.save();
     }
 

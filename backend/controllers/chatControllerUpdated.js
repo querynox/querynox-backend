@@ -171,7 +171,7 @@ const chatController = {
             if (!chatId) { // Create new Chat
                 user.chats.push(chat._id);
             }
-
+            user.updatedAt = Date.now();
             await user.save();
             res.status(200).json({ chatQuery: chatQuery, chat: chat });
 
@@ -306,6 +306,7 @@ const chatController = {
                 if (!chatId) { // Create new Chat
                     user.chats.push(chat._id);
                 }
+                user.updatedAt = Date.now();
                 await user.save();
 
                 sendEvent({ type: 'complete', chatQuery, chat });

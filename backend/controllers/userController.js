@@ -67,6 +67,7 @@ const userController = {
             } else if (bookmarked === false && already) {
                 user.bookmarkedChats = user.bookmarkedChats.filter(id => id.toString() !== chatId);
             }
+            user.updatedAt = Date.now();
             await user.save();
             return res.status(200).json({ bookmarked: user.bookmarkedChats.some(id => id.toString() === chatId) });
         } catch (error) {
