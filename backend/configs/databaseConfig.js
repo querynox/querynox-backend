@@ -1,14 +1,25 @@
 const mongoose = require('mongoose')
 const dotenv = require('dotenv');
 const logger = require('./loggerConfig');
+const { MAX_DATABASE_RETRY } = require('../data/configs');
 dotenv.config();
 
 const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    logger.info("Connected to Database");
-  } catch (error) {
-    logger.error("Error Connecting to Server " + error + "\n " + process.env.MONGOURI);
+  let retrys = 0;
+  while(retrys < MAX_DATABASE_RETRY){
+    try {
+      await mongoose.connect(process.env.MONGODB_URI);
+      logger.info("Connected to Database");
+      return;
+    } catch (error) {
+      logger.error("Error Connecting to Server " + error + "\n " + process.env.MONGOURI);
+      if(retrys < MAX_DATABASE_RETRY){
+        logger.info(`Retrying ${retrys}. . .`)
+      }else{
+        logger.error(`Connection failed to database after ${MAX_DATABASE_RETRY} attempts.`)
+        logger.error(error.message || String(error));
+      }
+    }
   }
 };
 
