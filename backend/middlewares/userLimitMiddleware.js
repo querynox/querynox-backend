@@ -1,6 +1,7 @@
 const Product = require("../models/Product.js");
 const DEFAULT_LIMITS = require("../data/defaultLimit.js");
 const models = require("../data/models.js");
+const logger = require("../configs/loggerConfig.js");
 
 const userLimitMiddleware = () => {
   return async (req, res, next) => {
@@ -33,6 +34,7 @@ const userLimitMiddleware = () => {
 
         let product = await Product.findById(user.productId);
         if (!product) {
+            logger.log("Subscribed product not found")
             return res.status(404).json({ error: "Subscribed product not found" });
         }
 
