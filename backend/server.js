@@ -23,7 +23,14 @@ const PORT = process.env.PORT || 8080;
 
 // Middlewares
 app.use(cors({
-  origin: [process.env.LOKI_LOGGER_HOST,process.env.FRONTEND_HOST,"http://localhost:4173","https://querynox-dev.vercel.app","https://www.querynox.xyz"],
+  origin: [process.env.LOKI_LOGGER_HOST,
+    process.env.FRONTEND_HOST,
+    "http://localhost:4173",
+    "https://querynox-dev.vercel.app",
+    "https://www.querynox.xyz",
+    "https://3.134.238.10",
+    "https://3.129.111.220",
+    "https://52.15.118.168"],
   credentials: true
 }));
 app.use((req,res,next)=>{
