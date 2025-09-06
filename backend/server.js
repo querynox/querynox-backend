@@ -81,7 +81,7 @@ app.get(['/help','/'],(req,res)=>{
 })
 
 //metrics for Prometheus
-app.get("/metrics", basicAuth({username:process.env.PROMETHEUS_USERNAME,password:process.env.PROMETHEUS_PASSWORD}), async (req,res) => {
+app.get("/metrics", basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}), async (req,res) => {
   res.setHeader("Content-Type",promClient.register.contentType)
   const metrics = await promClient.register.metrics();
   res.status(200).send(metrics)
@@ -99,6 +99,6 @@ app.use((err, req, res, next) => {
 });
 
 // Server start
-app.listen(PORT , () => {
+app.listen(PORT ,'0.0.0.0', () => {
   logger.info(`Server is running on port ${PORT}`);
 }); 
