@@ -22,6 +22,15 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middlewares
+app.options('*', cors({
+  origin: [
+    process.env.FRONTEND_HOST,
+    "http://localhost:4173",
+    "https://querynox-dev.vercel.app",
+    "https://querynox.xyz"
+  ],
+  credentials: true
+}));
 app.use(cors({
   origin: [process.env.LOKI_LOGGER_HOST,process.env.FRONTEND_HOST,"http://localhost:4173","https://querynox-dev.vercel.app","https://querynox.xyz"],
   credentials: true // optional, only if you're using cookies or auth headers

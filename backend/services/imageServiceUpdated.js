@@ -32,9 +32,9 @@ const imageService = {
             return {
                 success: true,
                 filename: file_name,
-                previewUrl: `${process.env.BACKEND_HOST}/public/generated_images/${file_name}`,//TODO: Remove in Prod : Use S3 Public Preview URL
-                downloadUrl: `${process.env.BACKEND_HOST}/api/v1/download/${file_name}`//Serving Images_generated (Mocking S3) //TODO: Remove in Prod : Use S3 Public Content Deposition Headder Link
-            };
+                previewUrl: `${process.env.BACKEND_HOST}/public/generated_images/${file_name}`,
+                downloadUrl: `${process.env.BACKEND_HOST}/api/v1/download/${file_name}`
+            }
         } catch (error) {
             return {
                 success: false,

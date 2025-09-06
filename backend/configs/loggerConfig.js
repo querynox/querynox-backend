@@ -35,7 +35,7 @@ const customConsoleFormatter = format.printf(({ level, message, timestamp, ...re
   }
 });
 
-if (process.env.NODE_ENV !== "production") {
+//if (process.env.NODE_ENV !== "production") {
   logger.add(new transports.Console({
     level: "silly", // log everything to console
     format: format.combine(
@@ -43,6 +43,6 @@ if (process.env.NODE_ENV !== "production") {
       customConsoleFormatter
     )
   }));
-}
+//}
 
 module.exports = logger;
