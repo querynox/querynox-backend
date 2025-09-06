@@ -52,6 +52,58 @@ const paymentController = {
         }
     },
 
+    listWebhookEndpoints: async (req,res) => {
+        try {
+            
+            const endpoints = await polar.webhooks.listWebhookEndpoints({})
+            res.json({ success: true, endpoints : endpoints.result.items});
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, error: "Webhook resend failed." });
+        }
+    },
+
+    replayWebhook: async (req, res) => {
+        try {
+            const { webhookEndpointId } = req.body;
+            const { event } = req.params;
+            const { limit ,after,succeeded,retry} = req.query;
+
+            const _createdAfter = after == undefined ? 0 : Number(after);
+            const _succeeded = succeeded == undefined ? undefined : succeeded == "true" ;
+            const _retry = retry == undefined ? false : retry == "true" ;
+
+            const deliveries = await polar.webhooks.listWebhookDeliveries({ endpointId:webhookEndpointId , limit:Number(limit) || 100});
+
+
+           const totalDeliveries = []
+
+            for (let delivery of deliveries.result.items) {
+
+                const match = delivery.webhookEvent.payload.match(/"type"\s*:\s*"([^"]+)"/);
+                const eventType = match ? String(match[1]) : "";
+
+                if (
+                    eventType.startsWith(event) && 
+                    delivery.createdAt.getTime() > _createdAfter  && 
+                    (_succeeded != undefined ? delivery.succeeded == _succeeded : true) 
+                ){
+                    if(_retry)
+                    await polar.webhooks.redeliverWebhookEvent({ id: delivery.webhookEvent.id })
+
+                    delete delivery.webhookEvent.payload;
+                    delivery.eventType = eventType
+                    totalDeliveries.push(delivery)
+                }
+            }
+
+            res.json({ success: true, deliveries: totalDeliveries });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, error: err  });
+        }
+    },
+
     customerPortal: async (req, res) => {
         try{
             const userId = req.userId;

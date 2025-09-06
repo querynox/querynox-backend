@@ -2,10 +2,10 @@ const logger = require("../configs/loggerConfig");
 
 // basicAuth.js
 const basicAuth = ({ username, password, realm = "protected" }) => {
-    if(!username || !password) {
-        logger.error("Username and Password not found supplied to basicAuth Middleware",username,password)
-        throw new Error("Username and Password not found supplied to basicAuth Middleware")
-    }
+  if(!username || !password) {
+      logger.error("Username and Password not found supplied to basicAuth Middleware",username,password)
+      throw new Error("Username and Password not found supplied to basicAuth Middleware")
+  }
   return function (req, res, next) {
     const authHeader = req.headers["authorization"];
 

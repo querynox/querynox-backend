@@ -1,6 +1,6 @@
 const DEFAULT_LIMITS = {
     chatGenerationLimit: 10,
-    imageGenerationLimit: 2,
+    imageGenerationLimit: 10,
     webSearchLimit: 2,
     fileRagLimit: 1,
     fileCountLimit: 1,

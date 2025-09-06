@@ -3,13 +3,17 @@ const paymentController = require('../../controllers/paymentController');
 const { validateEvent ,WebhookVerificationError } = require('@polar-sh/sdk/webhooks');
 const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware');
 const logger = require('../../configs/loggerConfig');
+const { basicAuth } = require('../../middlewares/basicAuthMiddleware');
 const router = express.Router();
 
 
 router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);
 router.get('/status/:checkoutId', paymentController.validateCheckout);
-
 router.get('/portal',clerkAuthMiddleware(),paymentController.customerPortal);
+router.get("/webhooks",basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.listWebhookEndpoints)
+
+router.post('/webhooks-event/:event',basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.replayWebhook);
+
 
 router.post('/webhook',async (req, res) => {
     try{
