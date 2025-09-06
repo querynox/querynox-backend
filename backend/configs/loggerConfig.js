@@ -28,16 +28,6 @@ logger.add(new LokiTransport({
   json: true
 }));
 
-if (process.env.NODE_ENV !== "production") {
-  logger.add(new transports.Console({
-    level: "silly", // log everything to console
-    format: format.combine(
-      format.timestamp(),
-      customConsoleFormatter
-    )
-  }));
-}
-
 // Custom console formatter
 const customConsoleFormatter = format.printf(({ level, message, timestamp, ...rest }) => {
   if (level === 'http' && message === "REQUEST") {
@@ -48,5 +38,15 @@ const customConsoleFormatter = format.printf(({ level, message, timestamp, ...re
     }`;
   }
 });
+
+if (process.env.NODE_ENV !== "production") {
+  logger.add(new transports.Console({
+    level: "silly", // log everything to console
+    format: format.combine(
+      format.timestamp(),
+      customConsoleFormatter
+    )
+  }));
+}
 
 module.exports = logger;
