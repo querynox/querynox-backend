@@ -142,6 +142,11 @@ const aiService = {
 
             const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
 
+            //Non Pro User has asked for pro Model
+            if(selectedModel.pro && !user.productId){
+                throw new Error("Pro Model requires pro user subscription.")
+            }
+
             // Handle image generation separately
             if(selectedModel.category === "Image Generation"){
                 const prompt = await this.generateContextForImageGeneration(messages);

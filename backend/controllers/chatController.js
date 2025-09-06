@@ -335,7 +335,7 @@ const chatController = {
         } catch (error) {
             logger.error('Streaming handleChat error:', error);
             if (!res.headersSent) {
-                res.status(500).json({ error: 'An internal server error occurred.' });
+                res.status(500).json({ error: error.message || 'An internal server error occurred.' });
             } else {
                 res.end();
             }
