@@ -5,7 +5,7 @@ const { colorizeLevel, colorizeRequest } = require("../services/colorService");
 /** * Levels and Priority error: 0, warn: 1, info: 2, http: 3, verbose: 4, debug: 5, silly: 6 */
 
 const logger = createLogger({
-  level: process.env.NODE_ENV !== "production" ? "silly" :" http", // accept all levels >= silly on Development
+  level: process.env.NODE_ENV !== "production" ? "silly" :"http", // accept all levels >= silly on Development
   format: format.combine(
     format.timestamp(),
     format.errors({ stack: true }), // ensures error stack traces are logged
@@ -14,19 +14,19 @@ const logger = createLogger({
   ),
   transports:[
     new transports.File({ filename: "logs/error.log", level: "error" }),
-    new transports.File({ filename: "logs/combined.log" })
+    new LokiTransport({
+        host:  process.env.LOKI_LOGGER_HOST,
+        level: "http",
+        labels: { app: "express", service: process.env.NODE_ENV !== "production" ? "querynox_backend-prod" : "querynox_backend_soham" },
+        json: true,
+        basicAuth: `${process.env.LOKI_USER}:${process.env.LOKI_API_KEY}`,
+        format: format.json(),
+        replaceTimestamp: true,
+        batching:true,
+        onConnectionError: (err) => console.error(err),
+    })
   ]
 });
-
-logger.add(new LokiTransport({
-  level: "http",
-  labels: { app: "express", service: "querynox_backend" },
-  host: process.env.LOKI_LOGGER_HOST,
-  basicAuth: `${process.env.LOKI_USER}:${process.env.LOKI_API_KEY}`,
-  batching: true,
-  interval: 5,
-  json: true
-}));
 
 // Custom console formatter
 const customConsoleFormatter = format.printf(({ level, message, timestamp, ...rest }) => {
