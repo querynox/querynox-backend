@@ -140,10 +140,11 @@ const aiService = {
     async* generateStreamingResponse(model, messages, systemPrompt, user) {
         try {
 
-            const selectedModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name);
+            const selectedModel = models.find(m => model == m.name) || models.find(m => m.name == "gpt-3.5-turbo");
 
             //Non Pro User has asked for pro Model
             if(selectedModel.pro && !user.productId){
+                yield {content:"System Error : Non Pro User has asked for pro Model"}
                 throw new Error("Pro Model requires pro user subscription.")
             }
 

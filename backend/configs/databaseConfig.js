@@ -5,7 +5,7 @@ const { MAX_DATABASE_RETRY } = require('../data/configs');
 dotenv.config();
 
 const connectDB = async () => {
-  let retrys = 0;
+  let retrys = 1;
   while(retrys < MAX_DATABASE_RETRY){
     try {
       await mongoose.connect(process.env.MONGODB_URI);

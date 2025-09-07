@@ -18,7 +18,7 @@ const chatController = {
             const { chatId } = req.params;
 
             if (!mongoose.Types.ObjectId.isValid(chatId)) {
-                return res.status(404).json({ message: 'Chat not found or not shared' });
+                return res.status(404).json({ error: 'Chat not found or not shared' });
             }
 
             const chat = await Chat.findOne({ _id: chatId, isShared: true })
@@ -26,7 +26,7 @@ const chatController = {
                 .lean();
 
             if (!chat) {
-                return res.status(404).json({ message: 'Chat not found or not shared' });
+                return res.status(404).json({ error: 'Chat not found or not shared' });
             }
 
             const chatQueries = await ChatQuery.find({ chatId: chat._id })
@@ -53,7 +53,7 @@ const chatController = {
             return res.status(200).json(safeChat);
         } catch (error) {
             logger.error(error)
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ error: error.message || 'Internal server error' });
         }
     },
     // --- AUTH: Toggle share ---
