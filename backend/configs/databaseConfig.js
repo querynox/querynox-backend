@@ -12,7 +12,6 @@ const connectDB = async () => {
       logger.info("Connected to Database");
       return;
     } catch (error) {
-      logger.error("Error Connecting to Server " + error + "\n " + process.env.MONGOURI);
       if(retrys < MAX_DATABASE_RETRY){
         logger.info(`Retrying ${retrys}. . .`)
       }else{
