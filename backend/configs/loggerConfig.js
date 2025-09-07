@@ -1,5 +1,4 @@
 const { createLogger, format, transports } = require("winston");
-const LokiTransport = require('winston-loki');
 const { colorizeLevel, colorizeRequest } = require("../services/colorService");
 
 /** * Levels and Priority error: 0, warn: 1, info: 2, http: 3, verbose: 4, debug: 5, silly: 6 */
@@ -46,6 +45,11 @@ if (process.env.NODE_ENV !== "production") {
       format.timestamp(),
       customConsoleFormatter
     )
+  }));
+}else{
+  logger.add(new transports.Console({
+    level: "http", // log everything to console
+    format: format.json()
   }));
 }
 
