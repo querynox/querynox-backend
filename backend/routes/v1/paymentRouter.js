@@ -10,12 +10,12 @@ const router = express.Router();
 router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);
 router.get('/status/:checkoutId', paymentController.validateCheckout);
 router.get('/portal',clerkAuthMiddleware(),paymentController.customerPortal);
-router.get("/webhooks",basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.listWebhookEndpoints)
+router.get("/list-webhooks",basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.listWebhookEndpoints)
 
-router.post('/webhook-events/:event',basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.replayWebhook);
+router.post('/replay-event/:event',basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.replayWebhook);
 
 
-router.post('/webhook',async (req, res) => {
+router.post('/webhooks',async (req, res) => {
     try{
         const event = validateEvent(req.body,req.headers,process.env.POLAR_WEBHOOK_SECRET);
         req.event = event;

@@ -12,20 +12,7 @@ const logger = createLogger({
     format.splat(),
     format.json() // base format for Loki
   ),
-  transports:[
-    new transports.File({ filename: "logs/error.log", level: "error" }),
-    new LokiTransport({
-        host:  process.env.LOKI_LOGGER_HOST,
-        level: "http",
-        labels: { app: "express", service: process.env.NODE_ENV !== "production" ? "querynox_backend-prod" : "querynox_backend_soham" },
-        json: true,
-        basicAuth: `${process.env.LOKI_USER}:${process.env.LOKI_API_KEY}`,
-        format: format.json(),
-        replaceTimestamp: true,
-        batching:true,
-        onConnectionError: (err) => console.error(err),
-    })
-  ]
+  transports:[new transports.File({ filename: "logs/error.log", level: "error" })]
 });
 
 // Custom console formatter
@@ -48,6 +35,19 @@ if (process.env.NODE_ENV !== "production") {
     )
   }));
 }else{
+
+  logger.add(new LokiTransport({
+      host:  process.env.LOKI_LOGGER_HOST,
+      level: "http",
+      labels: { app: "express", service: "querynox_backend-prod"},
+      json: true,
+      basicAuth: `${process.env.LOKI_USER}:${process.env.LOKI_API_KEY}`,
+      format: format.json(),
+      replaceTimestamp: true,
+      batching:true,
+      onConnectionError: (err) => console.error(err),
+  }))
+  
   logger.add(new transports.Console({
     level: "http", // log everything to console
     format: format.json()
