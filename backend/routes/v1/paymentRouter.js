@@ -15,7 +15,7 @@ router.get("/list-webhooks",basicAuth({username:process.env.USERNAME,password:pr
 router.post('/replay-event/:event',basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}),paymentController.replayWebhook);
 
 
-router.post('/webhooks',async (req, res) => {
+router.post('/webhook',async (req, res) => {
     try{
         const event = validateEvent(req.body,req.headers,process.env.POLAR_WEBHOOK_SECRET);
         req.event = event;
