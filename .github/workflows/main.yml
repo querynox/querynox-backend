@@ -17,6 +17,7 @@ jobs:
 
       - name: Deploy on EC2
         run: |
+          APP_USER=ec2-user
           INSTANCE_ID=${{ secrets.AWS_INSTANCE_ID }}
           aws ssm send-command \
             --targets "Key=InstanceIds,Values=$INSTANCE_ID" \
