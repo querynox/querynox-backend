@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({path:".env.local"});
 require('./configs/morganFormatterConfig')
 require("./configs/databaseConfig")()
 
@@ -10,6 +10,7 @@ const listEndpoints = require('express-list-endpoints');
 const morgan = require('morgan')
 const compresison = require('compression')
 const promClient = require('prom-client');
+const { execSync } = require('child_process');
 
 const { reqResMetrics, totalRequestCounter } = require('./configs/prometheusMetricsConfig');
 const logger = require("./configs/loggerConfig")
@@ -85,9 +86,20 @@ app.get('/health', (req, res) => {
 });
 
 //Help Router
-app.get(['/help','/'],(req,res)=>{
-  res.json(listEndpoints(app),);
-})
+app.get(['/help', '/'], (req, res) => {
+
+  let latestCommit = 'unknown';
+  try {
+    latestCommit = execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (err) {
+    logger.error('Failed to get latest commit', err);
+  }
+
+  res.json({
+    latestCommit,
+    endpoints: listEndpoints(app) // your existing data
+  });
+});
 
 //metrics for Prometheus
 app.get("/metrics", basicAuth({username:process.env.USERNAME,password:process.env.PASSWORD}), async (req,res) => {
@@ -109,5 +121,12 @@ app.use((err, req, res, next) => {
 
 // Server start
 app.listen(PORT ,'0.0.0.0', () => {
+  let latestCommit = 'unknown';
+  try {
+    latestCommit = execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (err) {
+    console.error('Failed to get latest commit', err);
+  }
   logger.info(`Server is running on port ${PORT}`);
+  logger.info(`Latest Commit : ${latestCommit}`);
 }); 
