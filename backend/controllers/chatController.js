@@ -186,7 +186,7 @@ const chatController = {
 
         } catch (error) {
             logger.error('Handle Chat Error:', error);
-            res.status(500).json({ error: 'An internal server error occurred.' });
+            res.status(500).json({ error: 'An internal server error occurred.'});
         }
     },
 
@@ -217,14 +217,14 @@ const chatController = {
                 // Truthy value of 'chatId' could be used to determine if chat already exist. 
 
                 if (!mongoose.Types.ObjectId.isValid(chatId)) {
-                    sendEvent({ type: 'error', error: 'Invalid Chat Id', chatId: chatId });
+                    sendEvent({ type: 'error', error: 'Invalid Chat Id', chatId: chatId || ""  });
                     res.write(`data: [DONE]\n\n`);
                     return res.end();
                 }
 
                 chat = await Chat.findById(chatId);
                 if (!chat){
-                    sendEvent({ type: 'error', error: 'Chat not found', chatId: chatId });
+                    sendEvent({ type: 'error', error: 'Chat not found', chatId: chatId  || "" });
                     res.write(`data: [DONE]\n\n`);
                     return res.end();
                 }
@@ -235,9 +235,9 @@ const chatController = {
                 chat = new Chat({ userId: user._id, title: prompt.substring(0, 50), chatName: chatName ,  model, systemPrompt, webSearch });
             }
 
-            sendEvent({ type: 'metadata', chatId: chat._id, chatName: chat.chatName });
+            sendEvent({ type: 'metadata', chatId: chatId || "" , chatName: chat.chatName });
             
-            sendEvent({ type: 'status', message: 'Loading conversation history...' , chatId: chat._id});
+            sendEvent({ type: 'status', message: 'Loading conversation history...' , chatId: chatId || ""});
             const previousQueries = await ChatQuery.find({ chatId: chat._id }).sort({ createdAt: 1 });
 
             const conversationHistory = previousQueries.map(q => {
@@ -250,17 +250,17 @@ const chatController = {
 
             let context = '';
             if (webSearch == "true" || webSearch == true) {
-                sendEvent({ type: 'status', message: 'Searching the web...', chatId: chat._id });
+                sendEvent({ type: 'status', message: 'Searching the web...', chatId: chatId || "" });
                 context += await webSearchService.search([...conversationHistory, { role: 'user', content: prompt }]);
                 user.usedWebSearch++;
-                sendEvent({ type: 'status', message: 'Web search completed.', chatId: chat._id });
+                sendEvent({ type: 'status', message: 'Web search completed.', chatId: chatId || "" });
             }
 
             if (files && files.length > 0) {
-                sendEvent({ type: 'status', message: `Processing ${files.length} file(s)...`, chatId: chat._id });
+                sendEvent({ type: 'status', message: `Processing ${files.length} file(s)...`, chatId: chatId || "" });
                 context += await ragService.getContextFromFiles(prompt, files);
                 user.usedFileRag++;
-                sendEvent({ type: 'status', message: 'File processing completed.', chatId: chat._id });
+                sendEvent({ type: 'status', message: 'File processing completed.', chatId: chatId || "" });
             }
 
             const augmentedPrompt = `${prompt}${context}`;
@@ -285,15 +285,16 @@ const chatController = {
                 ];
             }
 
-            sendEvent({ type: 'status', message: 'Generating AI response...', chatId: chat._id });
+            sendEvent({ type: 'status', message: 'Generating AI response...', chatId: chatId || "" });
 
             let fullResponse = {content:""};
             try {
                 for await (const chunk of aiService.generateStreamingResponse(model, messages, systemPrompt,user)) {
                     const {content, ...rest} = chunk;
                     fullResponse = {...rest,content:fullResponse.content + chunk.content}
-                    sendEvent({ type: 'content', content: chunk.content, chatId: chat._id });
+                    sendEvent({ type: 'content', content: chunk.content, chatId: chatId || "" });
                 }
+
                 if(models.find(m => m.name == model || m.fullName == model)?.category=="Image Generation"){
                     user.usedImageGeneration++;
                 }else{
@@ -317,6 +318,7 @@ const chatController = {
                     response: content,
                     meta:rest
                 });
+                console.log("WHY SAVING?")
                 await chatQuery.save();
                 if(!chatId){// Create new Chat
                     user.chats.push(chat._id);
@@ -327,7 +329,7 @@ const chatController = {
 
             } catch (aiError) {
                 logger.error('AI generation error:', aiError);
-                sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` , chatId: chat._id });
+                sendEvent({ type: 'error', error: `I apologize, an error occurred with the AI service: ${aiError.message}` , chatId: chatId || "" });
             }
 
             res.end();

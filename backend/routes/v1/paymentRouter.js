@@ -35,6 +35,7 @@ router.post('/webhook',async (req, res) => {
         }
     }catch(error){
         if (error instanceof WebhookVerificationError) {
+            logger.error(error)
             res.status(403).send('BAD WEBHOOK SECRET');
         }else{
             logger.error(error)

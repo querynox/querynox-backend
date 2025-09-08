@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
 const Groq = require('groq-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const Anthropic = require('@anthropic-ai/sdk');
+const { Anthropic } = require("@anthropic-ai/sdk");
 const imageService = require('./imageService');
 const models = require('../data/models');
 const logger = require('../configs/loggerConfig');
@@ -13,6 +13,7 @@ const OPENROUTER_MODELS = ['gpt-oss-120b', 'grok-3-mini'];
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
 
 // Initialize OpenRouter client
 let openRouterClient;
@@ -29,15 +30,6 @@ try {
     }
 } catch (error) {
     logger.error("Could not initialize OpenRouter client:", error.message);
-}
-
-let anthropic;
-try {
-    if (process.env.CLAUDE_API_KEY) {
-        anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
-    }
-} catch (error) {
-    logger.error("Could not initialize Anthropic client:", error.message);
 }
 
 const aiService = {
@@ -173,7 +165,7 @@ const aiService = {
                     yield {content: chunk.choices[0]?.delta?.content || ''};
                 }
             } else if (model === "Claude 3.5 Sonnet") {
-                if (!anthropic) throw new Error('Claude API key not configured.');
+                if (!(anthropic instanceof Anthropic)) throw new Error('Claude API key not configured.');
                 const stream = await anthropic.messages.create({
                     model: selectedModel.fullName,
                     max_tokens: 4096,
