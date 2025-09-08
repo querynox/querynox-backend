@@ -31,5 +31,5 @@ jobs:
               \"echo '${{ secrets.ENVIRONMENT_VARIABLES }}' > ~/querynox/backend/.env\",
               \"pm2 start ~/querynox/backend/server.js --name express || pm2 restart express\",
               \"pm2 save\",
-              \"cd ~/querynox && git log -1 --oneline\"  # debug: show deployed commit
+              \"cd ~/querynox && git log -1 --oneline\"
           ]"
