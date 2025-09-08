@@ -23,13 +23,12 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --comment "Deploy querynox app" \
             --parameters "commands=[
-              \"pm2 stop express || true\",
-              \"pm2 delete express || true\",
-              \"rm -rf ~/querynox\",
-              \"git clone --branch main https://github.com/querynox/querynox-backend.git ~/querynox\",
-              \"cd ~/querynox/backend && npm install --omit=dev\",
+              \"cd ~/querynox\",
+              \"git pull\",
+              \"cd ~/querynox/backend\",
+              \"npm ci --omit=dev\",
               \"echo '${{ secrets.ENVIRONMENT_VARIABLES }}' > ~/querynox/backend/.env\",
               \"pm2 start ~/querynox/backend/server.js --name express || pm2 restart express\",
               \"pm2 save\",
               \"cd ~/querynox && git log -1 --oneline\"
-          ]"
+            ]"
