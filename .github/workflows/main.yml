@@ -1,0 +1,34 @@
+name: Deploy to EC2 via SSM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Deploy on EC2
+        run: |
+          INSTANCE_ID=${{ secrets.AWS_INSTANCE_ID }}
+          aws ssm send-command \
+            --targets "Key=InstanceIds,Values=$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy querynox app" \
+            --parameters "commands=[
+              \"pm2 stop express || true\",
+              \"pm2 delete querynox || true\",
+              \"rm -rf ~/querynox\",
+              \"git clone https://github.com/querynox/querynox-backend ~/querynox\",
+              \"cd ~/querynox && npm install --omit=dev\",
+              \"echo '${{ secrets.ENVIRONMENT_VARIABLES }}' > ~/querynox/backend/.env\",
+              \"pm2 start server.js --name express || pm2 restart express\",
+              \"pm2 save\"
+            ]"
