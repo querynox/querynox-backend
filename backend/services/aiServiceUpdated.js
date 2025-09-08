@@ -75,7 +75,7 @@ const aiService = {
     // --- REFACTORED STREAMING RESPONSE GENERATOR ---
     async* generateStreamingResponse(model, messages, systemPrompt) {
         try {
-            const selectedModel = models.find(m => model === m.name) || models.find(m => "gpt-3.5-turbo" === m.name);
+            const selectedModel = models.find(m => model === m.name) || models.find(m => "llama-3.3-70b-versatile" === m.name);
 
             // Handle image generation separately
             if (selectedModel.category === "Image Generation") {

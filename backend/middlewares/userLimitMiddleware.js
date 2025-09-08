@@ -8,7 +8,7 @@ const userLimitMiddleware = () => {
     const user = req.user;
     const { chatId } = req.params;
     const { model, webSearch } = req.body;
-    const isImageModel = models.find(m => model == m.name) || models.find(m => "gpt-3.5-turbo" == m.name).category == "Image Generation";
+    const isImageModel = models.find(m => model == m.name) || models.find(m => "llama-3.3-70b-versatile" == m.name).category == "Image Generation";
 
     const now = new Date();
     const lastUpdated = new Date(user.limitsUpdatedAt);

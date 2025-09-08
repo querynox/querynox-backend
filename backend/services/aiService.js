@@ -132,7 +132,7 @@ const aiService = {
     async* generateStreamingResponse(model, messages, systemPrompt, user) {
         try {
 
-            const selectedModel = models.find(m => model == m.name) || models.find(m => m.name == "gpt-3.5-turbo");
+            const selectedModel = models.find(m => model == m.name) || models.find(m => m.name == "llama-3.3-70b-versatile");
 
             //Non Pro User has asked for pro Model
             if(selectedModel.pro && !user.productId){
