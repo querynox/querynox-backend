@@ -27,7 +27,7 @@ jobs:
               \"git pull\",
               \"cd ~/querynox/backend\",
               \"npm ci --omit=dev\",
-              \"echo '${{ secrets.ENVIRONMENT_VARIABLES }}' > ~/querynox/backend/.env\",
+              \"aws ssm get-parameter --name /querynox/prod/env --with-decryption --query Parameter.Value --output text > ~/querynox/backend/.env\",
               \"pm2 start ~/querynox/backend/server.js --name express || pm2 restart express\",
               \"pm2 save\",
               \"cd ~/querynox && git log -1 --oneline\"
