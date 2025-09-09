@@ -1,8 +1,7 @@
 const mongoose = require('mongoose')
-const dotenv = require('dotenv');
+require('dotenv').config();
 const logger = require('./loggerConfig');
 const { MAX_DATABASE_RETRY } = require('../data/configs');
-dotenv.config();
 
 const connectDB = async () => {
   let retrys = 1;

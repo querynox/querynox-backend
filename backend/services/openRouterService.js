@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const logger = require('../configs/loggerConfig');
+require('dotenv').config();
 
 // OpenRouter API configuration using OpenAI SDK
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;

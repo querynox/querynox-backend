@@ -3,6 +3,7 @@ const OpenAI = require('openai');
 const Tesseract = require('tesseract.js');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
