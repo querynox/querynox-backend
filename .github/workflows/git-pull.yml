@@ -28,5 +28,7 @@ jobs:
               \"export PM2_HOME=/home/ec2-user/.pm2\",
               \"cd ~/querynox\",
               \"sudo -u ec2-user git pull\",
+              \"cd ~/querynox/backend\",
+              \"aws ssm get-parameter --name /querynox/prod/env --with-decryption --query Parameter.Value --output text > ~/querynox/backend/.env\",
               \"sudo -u ec2-user pm2 reload all\",
             ]"
