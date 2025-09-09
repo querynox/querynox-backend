@@ -19,6 +19,14 @@ const {basicAuth} = require("./middlewares/basicAuthMiddleware")
 
 const v1Router = require('./routes/v1/router')
 
+const COMMIT_HASH =  (() =>{
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim();
+  } catch (err) {
+    logger.error('Failed to get latest commit', err);
+    return "UNKNOWN"
+  } 
+})();//IIFE
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -107,19 +115,13 @@ app.get('/health', (req, res) => {
       version: process.version,
       pid: process.pid,
       platform: process.platform,
+      commit_hash:COMMIT_HASH,
     }
   });
 });
 
 //Help Router
 app.get(['/help', '/'], (req, res) => {
-
-  let latestCommit = 'unknown';
-  try {
-    latestCommit = execSync('git rev-parse --short HEAD').toString().trim();
-  } catch (err) {
-    logger.error('Failed to get latest commit', err);
-  } 
   
   const endpoints = listEndpoints(app).map(endpoint => { 
     return endpoint.methods.map((method) => `${method} ${endpoint.path}`)
@@ -127,7 +129,7 @@ app.get(['/help', '/'], (req, res) => {
 
   res.json({
     messaage:"Welcome to backend.querynox.xyz. To view website, go to www.querynox.xyz",
-    latestCommit,
+    commit_hash:COMMIT_HASH,
     endpoints  // your existing data
   });
 });
