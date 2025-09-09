@@ -1,4 +1,4 @@
-name: Only Pull on EC2 via SSM
+name: Only Update .env from parameter '/querynox/prod/env' and Pull
 
 on:
   workflow_dispatch:
