@@ -1,5 +1,6 @@
 const pdf = require('pdf-parse');
 const OpenAI = require('openai');
+require('dotenv').config();
 const Tesseract = require('tesseract.js');
 const fs = require('fs');
 const path = require('path');

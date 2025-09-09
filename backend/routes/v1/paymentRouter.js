@@ -5,6 +5,7 @@ const clerkAuthMiddleware = require('../../middlewares/clerkAuthMiddleware');
 const logger = require('../../configs/loggerConfig');
 const { basicAuth } = require('../../middlewares/basicAuthMiddleware');
 const router = express.Router();
+require('dotenv').config();
 
 
 router.get('/checkout/:productId',clerkAuthMiddleware(), paymentController.handleCheckout);

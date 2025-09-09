@@ -1,4 +1,4 @@
-require('dotenv').config({path:".env.local"});
+require('dotenv').config();
 require('./configs/morganFormatterConfig')
 require("./configs/databaseConfig")()
 const os = require("node:os")

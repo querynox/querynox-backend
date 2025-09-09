@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+require('dotenv').config();
 const Groq = require('groq-sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Anthropic } = require("@anthropic-ai/sdk");

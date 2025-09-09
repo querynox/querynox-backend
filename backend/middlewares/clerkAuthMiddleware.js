@@ -1,5 +1,6 @@
 const { getAuth } = require('@clerk/express');
 const User = require('../models/User')
+require('dotenv').config();
 
 const clerkAuthMiddleware = (requestUser = false, upInsert = true) => {
   return async (req, res, next) => {

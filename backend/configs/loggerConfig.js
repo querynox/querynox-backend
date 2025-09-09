@@ -1,6 +1,7 @@
 const { createLogger, format, transports } = require("winston");
 const { colorizeLevel, colorizeRequest } = require("../services/colorService");
 const LokiTransport = require('winston-loki');
+require('dotenv').config();
 
 /** * Levels and Priority error: 0, warn: 1, info: 2, http: 3, verbose: 4, debug: 5, silly: 6 */
 

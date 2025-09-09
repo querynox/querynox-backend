@@ -10,6 +10,7 @@ const logger = require('../configs/loggerConfig');
 const axios = require('axios');
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const r2client = require('../configs/R2Client');
+require('dotenv').config();
 
 const chatController = {
     // --- PUBLIC: Get shared chat (read-only) ---
@@ -318,7 +319,6 @@ const chatController = {
                     response: content,
                     meta:rest
                 });
-                console.log("WHY SAVING?")
                 await chatQuery.save();
                 if(!chatId){// Create new Chat
                     user.chats.push(chat._id);
