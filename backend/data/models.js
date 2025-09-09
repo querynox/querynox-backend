@@ -1,6 +1,4 @@
 const models = [
-
-
     { name: "llama-3.3-70b-versatile", fullName:"llama-3.3-70b-versatile", category: "Text Generation", description: "Powerful open-source model via Groq", limit:32768 , pro:false },
     { name: "gemini-1.5-flash", fullName:"gemini-1.5-flash", category: "Text Generation", description: "Google's advanced language model", limit:1000000, pro:false },
     { name: "gpt-oss-120b", fullName:  "gpt-oss-120b", category: "Text Generation", description: "Openai Open Source 120B Model", limit:128000, pro:false },
