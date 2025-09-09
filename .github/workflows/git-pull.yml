@@ -28,5 +28,5 @@ jobs:
               \"export PM2_HOME=/home/ec2-user/.pm2\",
               \"cd ~/querynox\",
               \"sudo -u ec2-user git pull\",
-              \"sudo -u ec2-user pm2 reload 0\",
+              \"sudo -u ec2-user pm2 reload all\",
             ]"
