@@ -24,6 +24,8 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --comment "Deploy querynox app" \
             --parameters "commands=[
+              \"export HOME=/home/ec2-user\",
+              \"export PM2_HOME=/home/ec2-user/.pm2\",
               \"cd ~/querynox\",
               \"git pull\",
               \"pm2 reload 0\",
