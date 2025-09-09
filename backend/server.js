@@ -1,6 +1,7 @@
 require('dotenv').config({path:".env.local"});
 require('./configs/morganFormatterConfig')
 require("./configs/databaseConfig")()
+const os = require("node:os")
 
 const express = require('express');
 
@@ -79,9 +80,34 @@ app.use('/api/v1',v1Router)
 
 //Health Router
 app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString()
+  const uptime = process.uptime(); // in seconds
+  const memoryUsage = process.memoryUsage();
+  const freeMem = os.freemem();
+  const totalMem = os.totalmem();
+  const loadAvg = os.loadavg(); // [1, 5, 15 min]
+
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.round(uptime)}s`,
+    memory: {
+      rss: Math.round(memoryUsage.rss / 1024 / 1024) + " MB",
+      heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024) + " MB",
+      heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024) + " MB",
+      external: Math.round(memoryUsage.external / 1024 / 1024) + " MB",
+      freeSystem: Math.round(freeMem / 1024 / 1024) + " MB",
+      totalSystem: Math.round(totalMem / 1024 / 1024) + " MB"
+    },
+    load: {
+      "1m": loadAvg[0].toFixed(2),
+      "5m": loadAvg[1].toFixed(2),
+      "15m": loadAvg[2].toFixed(2),
+    },
+    node: {
+      version: process.version,
+      pid: process.pid,
+      platform: process.platform,
+    }
   });
 });
 
@@ -93,11 +119,16 @@ app.get(['/help', '/'], (req, res) => {
     latestCommit = execSync('git rev-parse --short HEAD').toString().trim();
   } catch (err) {
     logger.error('Failed to get latest commit', err);
-  }
+  } 
+  
+  const endpoints = listEndpoints(app).map(endpoint => { 
+    return endpoint.methods.map((method) => `${method} ${endpoint.path}`)
+   }).flatMap(e => e);
 
   res.json({
+    messaage:"Welcome to backend.querynox.xyz. To view website, go to www.querynox.xyz",
     latestCommit,
-    endpoints: listEndpoints(app) // your existing data
+    endpoints  // your existing data
   });
 });
 
