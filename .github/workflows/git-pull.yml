@@ -1,4 +1,4 @@
-name: Deploy to EC2 via SSM
+name: Only Pull on EC2 via SSM
 
 on:
   workflow_dispatch:
