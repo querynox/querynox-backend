@@ -1,8 +1,13 @@
-name: Only Update .env from parameter '/querynox/prod/env' and Pull
+name: Only Update .env and Pull latest commit in EC2
 
 on:
-  workflow_dispatch:
-
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      
 jobs:
   deploy:
     runs-on: ubuntu-latest
