@@ -1,0 +1,38 @@
+name: EC2 Scheduler
+
+on:
+  schedule:
+    # Stop at 12 AM IST (which is 18:30 UTC)
+    - cron: "30 18 * * *"
+    # Start at 6 AM IST (which is 00:30 UTC)
+    - cron: "30 0 * * *"
+  workflow_dispatch:  # allows manual trigger too
+      inputs:
+        action:
+          description: "Choose action"
+          required: true
+          default: "none"
+          type: choice
+          options:
+            - start
+            - stop
+
+jobs:
+  ec2-scheduler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1   # change to your region
+          
+      - name: Stop instance
+        if: ${{ github.event.schedule == '30 18 * * *' || github.event.inputs.action == 'stop' }}
+        run: aws ec2 stop-instances --instance-ids ${{ secrets.AWS_INSTANCE_ID }}
+
+      - name: Start instance
+        if: ${{ github.event.schedule == '30 0 * * *' || github.event.inputs.action == 'start' }}
+        run: aws ec2 start-instances --instance-ids ${{ secrets.AWS_INSTANCE_ID }}
