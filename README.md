@@ -28,7 +28,7 @@ QueryNox is a production-grade, multi-model AI chat platform engineered with a s
 - **Primary**: OpenAI (GPT models, DALL-E, Embeddings)
 - **Anthropic**: Claude 3.5 Sonnet via native SDK
 - **Groq**: Llama 3.3-70B with hardware acceleration
-- **Google**: Gemini 1.5 Flash via GenerativeAI SDK
+- **Google**: Gemini 2.5 Flash via GenerativeAI SDK
 - **OpenRouter**: Unified proxy for gpt-oss-120b, Grok-3-mini
 - **Embedding**: OpenAI text-embedding-3-small (1536 dimensions)
 
@@ -274,8 +274,8 @@ const models = [
     pro: false
   },
   {
-    name: "gemini-1.5-flash",
-    fullName: "gemini-1.5-flash",
+    name: "gemini-2.5-flash",
+    fullName: "gemini-2.5-flash",
     category: "Text Generation",
     description: "Google's advanced language model",
     limit: 1000000,
@@ -1022,7 +1022,7 @@ const contextLimits = {
   "gpt-3.5-turbo": 16385,
   "claude-3-5-sonnet-20240620": 200000,
   "llama-3.3-70b-versatile": 32768,
-  "gemini-1.5-flash": 1000000,
+  "gemini-2.5-flash": 1000000,
   "gpt-oss-120b": 128000,
   "grok-3-mini": 128000,
   "dall-e-3": 4000
