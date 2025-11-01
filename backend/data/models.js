@@ -2,7 +2,7 @@ const models = [
     { name: "llama-3.3-70b-versatile", fullName:"llama-3.3-70b-versatile", category: "Text Generation", description: "Powerful open-source model via Groq", limit:32768 , pro:false },
     { name: "gemini-2.5-flash", fullName:"gemini-2.5-flash", category: "Text Generation", description: "Google's advanced language model", limit:1000000, pro:false },
     { name: "gpt-oss-120b", fullName:  "gpt-oss-120b", category: "Text Generation", description: "Openai Open Source 120B Model", limit:128000, pro:false },
-    { name: "Claude 3.5 Sonnet", fullName:"claude-3-5-sonnet-20240620",  category: "Text Generation", description: "Fast and efficient text generation", limit:200000, pro:true },
+    { name: "Claude 4.5 Haiku", fullName:"claude-haiku-4-5-20251001",  category: "Text Generation", description: "Fast and efficient text generation", limit:200000, pro:true },
     { name: "gpt-3.5-turbo", fullName:"gpt-3.5-turbo", category: "Text Generation", description: "Reliable and versatile text generation", limit:16385, pro:true },
     { name: "grok-3-mini", fullName: "grok-3-mini", category: "Text Generation", description: "X.AI Grok 3 Mini Model", limit:128000, pro:true },
     { name: "dall-e-3", fullName:"dall-e-3", category: "Image Generation", description: "High-quality image generation", limit:4000, pro:false },
