@@ -251,7 +251,7 @@ class ServiceManager {
 const models = [
   {
     name: "Claude 3.5 Sonnet",
-    fullName: "claude-3-5-sonnet-20240620",
+    fullName: "claude-haiku-4-5-20251001",
     category: "Text Generation",
     description: "Fast and efficient text generation",
     limit: 200000,
@@ -1020,7 +1020,7 @@ const rateLimits = {
 ```javascript
 const contextLimits = {
   "gpt-3.5-turbo": 16385,
-  "claude-3-5-sonnet-20240620": 200000,
+  "claude-haiku-4-5-20251001": 200000,
   "llama-3.3-70b-versatile": 32768,
   "gemini-2.5-flash": 1000000,
   "gpt-oss-120b": 128000,
