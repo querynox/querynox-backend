@@ -40,7 +40,7 @@ if (process.env.NODE_ENV !== "production") {
   logger.add(new LokiTransport({
     host:  process.env.LOKI_LOGGER_HOST,
     level: "http",
-    labels: { app: "express", service: "querynox_backend_production"},
+    labels: { app: process.env.APPNAME || "express", service: "querynox_backend_production"},
     json: true,
     basicAuth: `${process.env.LOKI_USER}:${process.env.LOKI_API_KEY}`,
     format: format.json(),
