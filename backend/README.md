@@ -8,7 +8,7 @@ QueryNox is a powerful, flexible chat platform that integrates multiple AI model
   - OpenAI GPT-3.5
   - Claude Haiku 3.5
   - Llama 3.3 70B (via Groq)
-  - Gemini Pro
+  - Gemini 2.5 Flash
   - DALL-E 3 /gpt-image-1 (Image Generation)
 
 - **Advanced Context Enhancement**
