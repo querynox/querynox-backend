@@ -1,7 +1,6 @@
 require("dotenv").config()
 const OpenAI = require('openai');
 const crypto = require("crypto")
-const axios = require("axios")
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const r2client = require('../configs/R2Client');
 const logger = require("../configs/loggerConfig");
