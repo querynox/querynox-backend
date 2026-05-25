@@ -1,7 +1,7 @@
 require("dotenv").config()
 const OpenAI = require('openai');
 const crypto = require("crypto")
-require('dotenv').config();
+const axios = require("axios")
 const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const r2client = require('../configs/R2Client');
 const logger = require("../configs/loggerConfig");
@@ -16,8 +16,7 @@ const imageService = {
                 prompt: prompt,
                 n: 1,
                 size: '1024x1024',
-                quality: "standard",
-                response_format: "b64_json"
+                quality: "low"
             });
 
             const image_bytes = Buffer.from(response.data[0].b64_json, "base64");

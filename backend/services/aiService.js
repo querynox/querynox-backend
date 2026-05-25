@@ -189,7 +189,7 @@ const aiService = {
                 for await (const chunk of stream) {
                     yield {content:chunk.choices[0]?.delta?.content || ''};
                 }
-            } else if (model === "gemini-1.5-flash") {
+            } else if (model === "gemini-2.5-flash") {
                 const geminiModel = genAI.getGenerativeModel({ model: selectedModel.fullName, systemInstruction: finalSystemPrompt });
                 const contents = messages.map(msg => ({
                     role: msg.role === 'assistant' ? 'model' : 'user', // Gemini uses 'model' for assistant role

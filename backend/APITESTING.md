@@ -53,7 +53,7 @@ Content-Type: multipart/form-data
         "gemini-2.5-flash"
     ],
     "image_models": [
-        "dall-e-3",
+        "gpt-image-1-mini",
         "gpt-image-1"
     ]
 }
@@ -85,7 +85,7 @@ Content-Type: multipart/form-data
 {
     "clerkUserId": "testuser_16945564",
     "prompt": "A beautiful sunset over mountains",
-    "model": "dall-e-3",
+    "model": "gpt-image-1-mini",
     "systemPrompt": "Generate beautiful images"
 }
 ```
@@ -191,7 +191,7 @@ GET {{BASE_URL}}/chat/65f2a1b3c4d5e6f7g8h9i0j1
 {
     "clerkUserId": "testuser_16945564",
     "prompt": "A beautiful ghibli image of a girl",
-    "model": "dall-e-3",
+    "model": "gpt-image-1-mini",
     "systemPrompt": "Generate beautiful images"
 }
 ```
