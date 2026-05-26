@@ -43,7 +43,7 @@ CLAUDE_API_KEY=your_claude_api_key
 GOOGLE_API_KEY=your_google_search_api_key
 GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
 MODEL_EMBEDDING=text-embedding-3-small
-MODEL_GPT_IMAGE=dall-e-3
+MODEL_GPT_IMAGE=gpt-image-1-mini
 BACKEND_HOST=http://localhost:8080
 ```
 

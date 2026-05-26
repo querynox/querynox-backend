@@ -282,8 +282,8 @@ const models = [
     pro: false
   },
   {
-    name: "dall-e-3",
-    fullName: "dall-e-3",
+    name: "gpt-image-1-mini",
+    fullName: "gpt-image-1-mini",
     category: "Image Generation",
     description: "High-quality image generation",
     limit: 4000,
@@ -1025,7 +1025,7 @@ const contextLimits = {
   "gemini-2.5-flash": 1000000,
   "gpt-oss-120b": 128000,
   "grok-3-mini": 128000,
-  "dall-e-3": 4000
+  "gpt-image-1-mini": 4000
 };
 ```
 

@@ -5,7 +5,7 @@ const models = [
     { name: "Claude 4.5 Haiku", fullName:"claude-haiku-4-5-20251001",  category: "Text Generation", description: "Fast and efficient text generation", limit:200000, pro:true },
     { name: "gpt-3.5-turbo", fullName:"gpt-3.5-turbo", category: "Text Generation", description: "Reliable and versatile text generation", limit:16385, pro:true },
     { name: "grok-3-mini", fullName: "grok-3-mini", category: "Text Generation", description: "X.AI Grok 3 Mini Model", limit:128000, pro:true },
-    { name: "dall-e-3", fullName:"dall-e-3", category: "Image Generation", description: "High-quality image generation", limit:4000, pro:false },
+    { name: "gpt-image-1-mini", fullName:"gpt-image-1-mini", category: "Image Generation", description: "High-quality image generation", limit:4000, pro:false },
 ];
 
 module.exports = models

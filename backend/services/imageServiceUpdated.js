@@ -14,7 +14,7 @@ const imageService = {
             // For now, we'll use the existing OpenAI DALL-E service
             // You can extend this to use other image generation APIs through OpenRouter if available
             const response = await openai.images.generate({
-                model: process.env.MODEL_GPT_IMAGE || 'dall-e-3',
+                model: process.env.MODEL_GPT_IMAGE || 'gpt-image-1-mini',
                 prompt: prompt,
                 n: 1,
                 size: '1024x1024',
@@ -45,7 +45,7 @@ const imageService = {
     },
 
     // New method to generate image using OpenRouter (if image generation models become available)
-    generateImageWithOpenRouter: async (prompt, model = 'dall-e-3') => {
+    generateImageWithOpenRouter: async (prompt, model = 'gpt-image-1-mini') => {
         try {
             // This is a placeholder for future OpenRouter image generation
             // For now, fallback to the existing method
